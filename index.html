@@ -7,15 +7,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BubbleWord</title>
 
-    <!-- ✅ CORRECT CSS LINK -->
+    <!-- ✅ CSS FILE -->
     <link rel="stylesheet" href="styles.css">
-
 </head>
 
 <body>
 
 <!-- =========================================
-     TEACHER PANEL (hidden when using link)
+     TEACHER PANEL
 ========================================= -->
 
 <div id="teacher-panel">
@@ -92,7 +91,7 @@ luna, moon
 
     </div>
 
-    <!-- TARGET WORD BAR -->
+    <!-- TARGET WORD -->
     <div id="target-word-bar">
 
         <div id="target-label">
@@ -107,11 +106,9 @@ luna, moon
 
 </div>
 
-<!-- ✅ MAIN GAME SCRIPT -->
-<script src="script.js"></script>
-
 <!-- =========================================
-     LOAD VOCAB FROM SHARED LINK
+     ✅ LOAD VOCAB FROM URL FIRST
+     (THIS MUST COME BEFORE script.js)
 ========================================= -->
 
 <script>
@@ -134,20 +131,22 @@ function loadVocabFromURL() {
         };
     });
 
-    // ✅ Hide teacher panel
+    // ✅ hide teacher panel for students
     document.getElementById("teacher-panel").style.display = "none";
 
-    // ✅ Inject into textarea (optional)
-    document.getElementById("bulk-vocab-input").value =
-        vocabListFromURL.map(v => `${v.word}, ${v.definition}`).join("\n");
-
-    // ✅ Make available to script.js
+    // ✅ pass vocab to game
     window.preloadedVocab = vocabListFromURL;
 }
 
 loadVocabFromURL();
 
 </script>
+
+<!-- =========================================
+     ✅ GAME SCRIPT (LOAD AFTER VOCAB)
+========================================= -->
+
+<script src="script.js"></script>
 
 </body>
 </html>

@@ -1,8 +1,15 @@
+
+// =========================================
+// CANVAS SETUP
+// =========================================
+
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 function resizeCanvas() {
-    const panelWidth = document.getElementById("teacher-panel")?.offsetWidth || 0;
+    const panelWidth =
+        document.getElementById("teacher-panel")?.offsetWidth || 0;
+
     canvas.width = window.innerWidth - panelWidth;
     canvas.height = window.innerHeight;
 }
@@ -10,7 +17,10 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
-// ================= SOUND =================
+// =========================================
+// SOUND SYSTEM
+// =========================================
+
 let soundOn = true;
 
 const pop = new Audio("https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg");
@@ -33,38 +43,54 @@ document.getElementById("mute-btn").onclick = () => {
     document.getElementById("mute-btn").textContent = soundOn ? "🔊" : "🔇";
 };
 
-// ================= GAME =================
+// =========================================
+// GAME STATE
+// =========================================
 
 let score = 0;
 let level = 1;
 let timeLeft = 60;
 let attempts = 20;
+
+let correctCount = 0;
+let totalClicks = 0;
+
 let vocab = [];
 let bubbles = [];
 let timer;
 
+let gameOver = false;
+
+// HUD
 const scoreDisplay = document.getElementById("score");
 const levelDisplay = document.getElementById("level");
 const timerDisplay = document.getElementById("timer");
 const attemptsDisplay = document.getElementById("attempts");
 const targetWordDisplay = document.getElementById("target-word");
 
-// ================= CREATE LEVEL =================
+// =========================================
+// CREATE LEVEL
+// =========================================
 
 function createLevel() {
 
     bubbles = [];
+    gameOver = false;
 
     attempts = 20;
     attemptsDisplay.textContent = attempts;
 
     startTimer();
 
-    let selected = [...vocab].sort(() => Math.random() - 0.5).slice(0, 10);
+    let selected = [...vocab]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 10);
 
-    const answer = selected[Math.floor(Math.random() * selected.length)];
+    const answer =
+        selected[Math.floor(Math.random() * selected.length)];
 
-    targetWordDisplay.textContent = answer.word.toUpperCase();
+    targetWordDisplay.textContent =
+        answer.word.toUpperCase();
 
     selected.forEach(item => {
 
@@ -74,31 +100,42 @@ function createLevel() {
         let y = radius + Math.random() * (canvas.height - 200);
 
         bubbles.push({
-            x, y,
+            x,
+            y,
             r: radius,
             text: item.definition,
             correct: item.word === answer.word
         });
-
     });
 }
 
-// ================= TIMER =================
+// =========================================
+// TIMER
+// =========================================
 
 function startTimer() {
+
     clearInterval(timer);
+
     timeLeft = 60;
     timerDisplay.textContent = timeLeft;
 
     timer = setInterval(() => {
+
         timeLeft--;
         timerDisplay.textContent = timeLeft;
 
-        if (timeLeft <= 0) endGame("TIME'S UP!");
+        if (timeLeft <= 0) {
+            playMiss();
+            endGame("TIME'S UP!");
+        }
+
     }, 1000);
 }
 
-// ================= DRAW =================
+// =========================================
+// DRAW
+// =========================================
 
 function draw() {
 
@@ -107,7 +144,7 @@ function draw() {
     bubbles.forEach(b => {
 
         ctx.beginPath();
-        ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
         ctx.fillStyle = "white";
         ctx.fill();
 
@@ -115,17 +152,24 @@ function draw() {
         ctx.textAlign = "center";
         ctx.font = "20px Arial";
 
-        wrapText(b.text, b.x, b.y, b.r * 1.5);
+        wrapText(b.text, b.x, b.y, b.r * 1.6);
     });
 }
 
+// =========================================
+// TEXT WRAP
+// =========================================
+
 function wrapText(text, x, y, maxWidth) {
+
     const words = text.split(" ");
     let lines = [];
     let line = "";
 
     words.forEach(word => {
+
         let test = line + word + " ";
+
         if (ctx.measureText(test).width > maxWidth) {
             lines.push(line);
             line = word + " ";
@@ -137,86 +181,162 @@ function wrapText(text, x, y, maxWidth) {
     lines.push(line);
 
     lines.forEach((l, i) => {
-        ctx.fillText(l, x, y + i*18 - 10);
+        ctx.fillText(l, x, y + i * 20 - 10);
     });
 }
 
-// ================= CLICK =================
+// =========================================
+// CLICK HANDLER
+// =========================================
 
-canvas.onclick = e => {
+canvas.onclick = (e) => {
+
+    if (gameOver) return;
 
     for (let b of bubbles) {
 
         let dx = e.offsetX - b.x;
         let dy = e.offsetY - b.y;
 
-        if (Math.sqrt(dx*dx + dy*dy) < b.r * 1.1) {
+        if (Math.sqrt(dx * dx + dy * dy) < b.r * 1.1) {
 
+            totalClicks++;
+
+            // ✅ CORRECT
             if (b.correct) {
 
                 playPop();
 
-                score += 100;
+                correctCount++;
+
+                score += 10;
                 scoreDisplay.textContent = score;
 
                 bubbles = bubbles.filter(x => x !== b);
 
+                // ✅ LEVEL COMPLETE
                 if (bubbles.length === 0) {
+
+                    let bonus = timeLeft * 2;
+                    score += bonus;
+
+                    scoreDisplay.textContent = score;
+
                     level++;
+                    levelDisplay.textContent = level;
+
                     createLevel();
                 }
 
-            } else {
+            }
+
+            // ❌ INCORRECT
+            else {
 
                 playMiss();
 
                 attempts--;
                 attemptsDisplay.textContent = attempts;
 
-                if (attempts <= 0) endGame("OUT OF ATTEMPTS!");
+                if (attempts <= 0) {
+                    endGame("OUT OF ATTEMPTS!");
+                }
             }
 
+            break;
         }
     }
 };
 
-// ================= GAME OVER =================
+// =========================================
+// GAME OVER
+// =========================================
 
-function endGame(msg) {
+function endGame(message) {
 
+    gameOver = true;
     clearInterval(timer);
 
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+    let accuracy =
+        totalClicks > 0
+            ? Math.round((correctCount / totalClicks) * 100)
+            : 0;
+
+    ctx.fillStyle = "rgba(0,0,0,0.8)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = "white";
-    ctx.font = "40px Arial";
+    ctx.textAlign = "center";
 
-    ctx.fillText(msg, canvas.width/2, canvas.height/2);
+    ctx.font = "44px Arial";
+    ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 80);
+
+    ctx.font = "28px Arial";
+
+    ctx.fillText("Final Score: " + score, canvas.width / 2, canvas.height / 2 - 20);
+    ctx.fillText("Correct Answers: " + correctCount, canvas.width / 2, canvas.height / 2 + 20);
+    ctx.fillText("Accuracy: " + accuracy + "%", canvas.width / 2, canvas.height / 2 + 60);
+
+    ctx.font = "18px Arial";
+    ctx.fillText("Click Start to play again", canvas.width / 2, canvas.height / 2 + 110);
 }
 
-// ================= START =================
+// =========================================
+// START BUTTON
+// =========================================
 
 document.getElementById("start-game-btn").onclick = () => {
 
-    vocab = window.preloadedVocab || document.getElementById("bulk-vocab-input")
-    .value.split("\n").map(x => {
-        let p = x.split(",");
-        return { word:p[0], definition:p[1] };
-    });
+    vocab =
+        window.preloadedVocab ||
+        document.getElementById("bulk-vocab-input")
+        .value.split("\n")
+        .map(line => {
+            let parts = line.split(",");
+            return {
+                word: parts[0]?.trim(),
+                definition: parts.slice(1).join(",").trim()
+            };
+        })
+        .filter(v => v.word && v.definition);
+
+    score = 0;
+    level = 1;
+    correctCount = 0;
+    totalClicks = 0;
+
+    scoreDisplay.textContent = score;
+    levelDisplay.textContent = level;
 
     createLevel();
 };
 
-// AUTO START
-if (window.preloadedVocab) {
+// =========================================
+// AUTO START FROM LINK
+// =========================================
+
+if (window.preloadedVocab && window.preloadedVocab.length > 0) {
+
     vocab = window.preloadedVocab;
+
+    score = 0;
+    level = 1;
+    correctCount = 0;
+    totalClicks = 0;
+
+    scoreDisplay.textContent = score;
+    levelDisplay.textContent = level;
+
     createLevel();
 }
 
+// =========================================
 // LOOP
+// =========================================
+
 function loop() {
     draw();
     requestAnimationFrame(loop);
 }
+
 loop();

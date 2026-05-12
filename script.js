@@ -1,4 +1,3 @@
-
 // =========================================
 // CANVAS SETUP
 // =========================================
@@ -70,7 +69,7 @@ let playAgainButton = {
     visible: false
 };
 
-// HUD references
+// HUD
 const scoreDisplay = document.getElementById("score");
 const levelDisplay = document.getElementById("level");
 const timerDisplay = document.getElementById("timer");
@@ -101,45 +100,43 @@ function createLevel() {
     targetWordDisplay.textContent =
         answer.word.toUpperCase();
 
-selected.forEach(item => {
+    selected.forEach(item => {
 
-    let radius = 90;
-    let x, y;
-    let safe = false;
+        let radius = 90;
+        let x, y;
+        let safe = false;
 
-    while (!safe) {
+        while (!safe) {
 
-        x = radius + Math.random() * (canvas.width - radius * 2);
-        y = radius + 120 + Math.random() * (canvas.height - 350);
+            x = radius + Math.random() * (canvas.width - radius * 2);
+            y = radius + 120 + Math.random() * (canvas.height - 350);
 
-        safe = true;
+            safe = true;
 
-        for (let other of bubbles) {
+            for (let other of bubbles) {
+                let dx = x - other.x;
+                let dy = y - other.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
 
-            let dx = x - other.x;
-            let dy = y - other.y;
-
-            let dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist < radius * 2.4) {
-                safe = false;
-                break;
+                if (dist < radius * 2.4) {
+                    safe = false;
+                    break;
+                }
             }
         }
-    }
 
-    let speed = (level - 1) * 0.5;
+        let speed = (level - 1) * 0.5;
 
-    bubbles.push({
-        x,
-        y,
-        r: radius,
-        text: item.definition,
-        correct: item.word === answer.word,
-        vx: (Math.random() - 0.5) * speed,
-        vy: (Math.random() - 0.5) * speed
+        bubbles.push({
+            x,
+            y,
+            r: radius,
+            text: item.definition,
+            correct: item.word === answer.word,
+            vx: (Math.random() - 0.5) * speed,
+            vy: (Math.random() - 0.5) * speed
+        });
     });
-});
 }
 
 // =========================================
@@ -174,27 +171,22 @@ function update() {
 
     bubbles.forEach(b => {
 
-        // LEVEL 1 → NO movement
         if (level === 1) return;
 
-        // LEVEL 2 → horizontal only
         if (level === 2) {
             b.x += b.vx;
         }
 
-        // LEVEL 3+ → full movement
         if (level >= 3) {
             b.x += b.vx;
             b.y += b.vy;
         }
 
-        // LEVEL 5+ → acceleration randomness
         if (level >= 5) {
             b.vx += (Math.random() - 0.5) * 0.1;
             b.vy += (Math.random() - 0.5) * 0.1;
         }
 
-        // bounce walls
         if (b.x < b.r || b.x > canvas.width - b.r) {
             b.vx *= -1;
         }
@@ -215,49 +207,44 @@ function draw() {
 
     bubbles.forEach(b => {
 
-// oval bubble
-ctx.beginPath();
-ctx.ellipse(b.x, b.y, b.r * 1.05, b.r * 0.9, 0, 0, Math.PI * 2);
+        // bubble shape
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y, b.r * 1.05, b.r * 0.9, 0, 0, Math.PI * 2);
 
-// gradient fill
-let gradient = ctx.createRadialGradient(
-    b.x - b.r * 0.3,
-    b.y - b.r * 0.3,
-    b.r * 0.2,
-    b.x,
-    b.y,
-    b.r
-);
+        let gradient = ctx.createRadialGradient(
+            b.x - b.r * 0.3,
+            b.y - b.r * 0.3,
+            b.r * 0.2,
+            b.x,
+            b.y,
+            b.r
+        );
 
-gradient.addColorStop(0, "rgba(255,255,255,0.9)");
-gradient.addColorStop(0.4, "rgba(200,230,255,0.6)");
-gradient.addColorStop(1, "rgba(150,200,255,0.3)");
+        gradient.addColorStop(0, "rgba(255,255,255,0.9)");
+        gradient.addColorStop(0.4, "rgba(200,230,255,0.6)");
+        gradient.addColorStop(1, "rgba(150,200,255,0.3)");
 
-ctx.fillStyle = gradient;
-ctx.fill();
+        ctx.fillStyle = gradient;
+        ctx.fill();
 
-// soft outline
-ctx.strokeStyle = "rgba(255,255,255,0.6)";
-ctx.lineWidth = 2;
-ctx.stroke();
+        ctx.strokeStyle = "rgba(255,255,255,0.6)";
+        ctx.stroke();
 
-// highlight shine
-ctx.beginPath();
-ctx.ellipse(
-    b.x - b.r * 0.35,
-    b.y - b.r * 0.35,
-    b.r * 0.2,
-    b.r * 0.12,
-    0,
-    0,
-    Math.PI * 2
-);
-ctx.fillStyle = "rgba(255,255,255,0.8)";
-ctx.fill();
-;
+        // highlight
+        ctx.beginPath();
+        ctx.ellipse(
+            b.x - b.r * 0.35,
+            b.y - b.r * 0.35,
+            b.r * 0.2,
+            b.r * 0.12,
+            0, 0, Math.PI * 2
+        );
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.fill();
 
+        // text
         ctx.fillStyle = "#123";
-        ctx.font = "20px Arial";
+        ctx.font = "bold 20px Arial";
         ctx.textAlign = "center";
 
         wrapText(b.text, b.x, b.y, b.r * 1.6);
@@ -322,8 +309,8 @@ canvas.onclick = (e) => {
     const x = e.offsetX;
     const y = e.offsetY;
 
+    // play again
     if (gameOver && playAgainButton.visible) {
-
         if (
             x > playAgainButton.x &&
             x < playAgainButton.x + playAgainButton.width &&
@@ -355,12 +342,27 @@ canvas.onclick = (e) => {
                 score += 10;
                 scoreDisplay.textContent = score;
 
+                // REMOVE bubble
                 bubbles = bubbles.filter(rem => rem !== b);
 
-                if (bubbles.length === 0) {
+                // ✅ UPDATE TARGET WORD
+                if (bubbles.length > 0) {
+
+                    let next = bubbles[Math.floor(Math.random() * bubbles.length)];
+
+                    bubbles.forEach(x => x.correct = (x === next));
+
+                    let match = vocab.find(v => v.definition === next.text);
+                    if (match) {
+                        targetWordDisplay.textContent =
+                            match.word.toUpperCase();
+                    }
+
+                } else {
 
                     let bonus = timeLeft * 2;
                     score += bonus;
+
                     scoreDisplay.textContent = score;
 
                     level++;

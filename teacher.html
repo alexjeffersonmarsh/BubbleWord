@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,7 +6,7 @@
     <meta charset="UTF-8">
     <title>BubbleWord Teacher Setup</title>
 
-    <!-- ✅ Correct CSS link -->
+    <!-- ✅ Link to shared CSS -->
     <link rel="stylesheet" href="styles.css">
 
     <style>
@@ -56,6 +57,7 @@
             color: white;
             font-weight: bold;
             cursor: pointer;
+            transition: 0.2s;
         }
 
         button:hover {
@@ -110,43 +112,77 @@ luna, moon
 
     <div id="link-output"></div>
 
+    <!-- ✅ Copy button -->
+    <button id="copy-btn" style="display:none;" onclick="copyLink()">
+        Copy Link
+    </button>
+
 </div>
 
 <script>
 
+let generatedLink = "";
+
+// =========================================
+// GENERATE LINK
+// =========================================
 function generateLink() {
 
-    let input = document.getElementById("teacher-input").value;
+    const input = document.getElementById("teacher-input").value;
 
-    let lines = input.split("\n");
+    const lines = input.split("\n");
 
-    let encoded = lines
+    const encoded = lines
         .filter(line => line.trim() !== "")
         .map(line => {
 
-            let parts = line.split(",");
+            const parts = line.split(",");
 
             if (parts.length < 2) return null;
 
-            let word = parts[0].trim();
-            let def = parts.slice(1).join(",").trim();
+            const word = parts[0].trim();
+            const def = parts.slice(1).join(",").trim();
 
             return word + "|" + def;
         })
         .filter(x => x !== null)
         .join(";");
 
-    let url = window.location.origin +
-              "/index.html?vocab=" +
-              encodeURIComponent(encoded);
+    generatedLink = window.location.origin +
+        "/index.html?vocab=" +
+        encodeURIComponent(encoded);
 
     document.getElementById("link-output").innerHTML =
-        "<strong>Share this link with students:</strong><br><br>" +
-        "<a href='" + url + "' target='_blank'>" + url + "</a>";
+        "<strong>Share this link:</strong><br><br>" +
+        "<a href='" + generatedLink + "' target='_blank'>" +
+        generatedLink +
+        "</a>";
+
+    // show copy button
+    document.getElementById("copy-btn").style.display = "block";
+}
+
+// =========================================
+// COPY LINK
+// =========================================
+function copyLink() {
+
+    navigator.clipboard.writeText(generatedLink).then(() => {
+
+        const btn = document.getElementById("copy-btn");
+
+        btn.textContent = "Copied!";
+
+        setTimeout(() => {
+            btn.textContent = "Copy Link";
+        }, 1500);
+
+    }).catch(() => {
+        alert("Copy failed. Please copy the link manually.");
+    });
 }
 
 </script>
 
 </body>
-
 </html>

@@ -157,10 +157,15 @@ function generateLink() {
         .filter(x => x !== null)
         .join(";");
 
-    generatedLink =
-        window.location.origin +
-        "/index.html?vocab=" +
-        encodeURIComponent(encoded);
+
+const basePath = window.location.pathname.replace("teacher.html", "");
+
+generatedLink =
+    window.location.origin +
+    basePath +
+    "?vocab=" +
+    encodeURIComponent(encoded);
+
 
     document.getElementById("link-output").innerHTML =
         "<strong>Share this link:</strong><br><br>" +

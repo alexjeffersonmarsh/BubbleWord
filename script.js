@@ -215,13 +215,46 @@ function draw() {
 
     bubbles.forEach(b => {
 
-        ctx.beginPath();
-        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
-        ctx.fillStyle = "white";
-        ctx.fill();
+// oval bubble
+ctx.beginPath();
+ctx.ellipse(b.x, b.y, b.r * 1.05, b.r * 0.9, 0, 0, Math.PI * 2);
 
-        ctx.strokeStyle = "#b8d7e8";
-        ctx.stroke();
+// gradient fill
+let gradient = ctx.createRadialGradient(
+    b.x - b.r * 0.3,
+    b.y - b.r * 0.3,
+    b.r * 0.2,
+    b.x,
+    b.y,
+    b.r
+);
+
+gradient.addColorStop(0, "rgba(255,255,255,0.9)");
+gradient.addColorStop(0.4, "rgba(200,230,255,0.6)");
+gradient.addColorStop(1, "rgba(150,200,255,0.3)");
+
+ctx.fillStyle = gradient;
+ctx.fill();
+
+// soft outline
+ctx.strokeStyle = "rgba(255,255,255,0.6)";
+ctx.lineWidth = 2;
+ctx.stroke();
+
+// highlight shine
+ctx.beginPath();
+ctx.ellipse(
+    b.x - b.r * 0.35,
+    b.y - b.r * 0.35,
+    b.r * 0.2,
+    b.r * 0.12,
+    0,
+    0,
+    Math.PI * 2
+);
+ctx.fillStyle = "rgba(255,255,255,0.8)";
+ctx.fill();
+;
 
         ctx.fillStyle = "#123";
         ctx.font = "20px Arial";

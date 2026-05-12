@@ -1,4 +1,3 @@
-
 // =========================================
 // CANVAS SETUP
 // =========================================
@@ -38,6 +37,7 @@ function playMiss() {
     miss.play();
 }
 
+// mute toggle
 document.getElementById("mute-btn").onclick = () => {
     soundOn = !soundOn;
     document.getElementById("mute-btn").textContent = soundOn ? "🔊" : "🔇";
@@ -50,7 +50,7 @@ document.getElementById("mute-btn").onclick = () => {
 let score = 0;
 let level = 1;
 let timeLeft = 60;
-let attempts = 20;
+let shotsLeft = 20;
 
 let correctCount = 0;
 let totalClicks = 0;
@@ -61,7 +61,7 @@ let timer;
 
 let gameOver = false;
 
-// ✅ play again button state
+// play again button
 let playAgainButton = {
     x: 0,
     y: 0,
@@ -70,7 +70,7 @@ let playAgainButton = {
     visible: false
 };
 
-// HUD
+// HUD elements
 const scoreDisplay = document.getElementById("score");
 const levelDisplay = document.getElementById("level");
 const timerDisplay = document.getElementById("timer");
@@ -86,8 +86,8 @@ function createLevel() {
     bubbles = [];
     gameOver = false;
 
-    attempts = 20;
-    attemptsDisplay.textContent = attempts;
+    shotsLeft = 20;
+    attemptsDisplay.textContent = shotsLeft;
 
     startTimer();
 
@@ -106,7 +106,9 @@ function createLevel() {
         let radius = 100;
 
         let x = radius + Math.random() * (canvas.width - radius * 2);
-        let y = radius + Math.random() * (canvas.height - 200);
+
+        // ✅ SAFE vertical spacing (avoids HUD + bottom bar)
+        let y = radius + 100 + Math.random() * (canvas.height - 300);
 
         bubbles.push({
             x,
@@ -143,14 +145,14 @@ function startTimer() {
 }
 
 // =========================================
-// DRAW
+// DRAW LOOP
 // =========================================
 
 function draw() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw bubbles
+    // draw bubbles
     bubbles.forEach(b => {
 
         ctx.beginPath();
@@ -158,14 +160,17 @@ function draw() {
         ctx.fillStyle = "white";
         ctx.fill();
 
-        ctx.fillStyle = "black";
-        ctx.textAlign = "center";
+        ctx.strokeStyle = "#b8d7e8";
+        ctx.stroke();
+
+        ctx.fillStyle = "#123";
         ctx.font = "20px Arial";
+        ctx.textAlign = "center";
 
         wrapText(b.text, b.x, b.y, b.r * 1.6);
     });
 
-    // Draw play again button if visible
+    // draw Play Again button
     if (playAgainButton.visible) {
 
         ctx.fillStyle = "#34bc6e";
@@ -178,7 +183,6 @@ function draw() {
 
         ctx.fillStyle = "white";
         ctx.font = "22px Arial";
-        ctx.textAlign = "center";
         ctx.fillText(
             "Play Again",
             canvas.width / 2,
@@ -188,7 +192,7 @@ function draw() {
 }
 
 // =========================================
-// TEXT WRAP
+// TEXT WRAPPING
 // =========================================
 
 function wrapText(text, x, y, maxWidth) {
@@ -199,13 +203,13 @@ function wrapText(text, x, y, maxWidth) {
 
     words.forEach(word => {
 
-        let test = line + word + " ";
+        let testLine = line + word + " ";
 
-        if (ctx.measureText(test).width > maxWidth) {
+        if (ctx.measureText(testLine).width > maxWidth) {
             lines.push(line);
             line = word + " ";
         } else {
-            line = test;
+            line = testLine;
         }
     });
 
@@ -246,10 +250,11 @@ canvas.onclick = (e) => {
         let dx = x - b.x;
         let dy = y - b.y;
 
-        if (Math.sqrt(dx*dx + dy*dy) < b.r * 1.1) {
+        if (Math.sqrt(dx * dx + dy * dy) < b.r * 1.1) {
 
             totalClicks++;
 
+            // ✅ CORRECT
             if (b.correct) {
 
                 playPop();
@@ -266,6 +271,7 @@ canvas.onclick = (e) => {
 
                     let bonus = timeLeft * 2;
                     score += bonus;
+
                     scoreDisplay.textContent = score;
 
                     level++;
@@ -273,16 +279,18 @@ canvas.onclick = (e) => {
 
                     createLevel();
                 }
+            }
 
-            } else {
+            // ❌ INCORRECT
+            else {
 
                 playMiss();
 
-                attempts--;
-                attemptsDisplay.textContent = attempts;
+                shotsLeft--;
+                attemptsDisplay.textContent = shotsLeft;
 
-                if (attempts <= 0) {
-                    endGame("OUT OF ATTEMPTS!");
+                if (shotsLeft <= 0) {
+                    endGame("OUT OF SHOTS!");
                 }
             }
 
@@ -292,7 +300,7 @@ canvas.onclick = (e) => {
 };
 
 // =========================================
-// GAME OVER
+// GAME OVER SCREEN
 // =========================================
 
 function endGame(message) {
@@ -315,11 +323,12 @@ function endGame(message) {
     ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 100);
 
     ctx.font = "28px Arial";
+
     ctx.fillText("Final Score: " + score, canvas.width / 2, canvas.height / 2 - 30);
     ctx.fillText("Correct: " + correctCount, canvas.width / 2, canvas.height / 2 + 10);
     ctx.fillText("Accuracy: " + accuracy + "%", canvas.width / 2, canvas.height / 2 + 50);
 
-    // ✅ SHOW PLAY AGAIN BUTTON
+    // ✅ PLAY AGAIN BUTTON
     playAgainButton.x = canvas.width / 2 - 110;
     playAgainButton.y = canvas.height / 2 + 90;
     playAgainButton.visible = true;
@@ -358,6 +367,3 @@ document.getElementById("start-game-btn").onclick = () => {
         .map(line => {
             let parts = line.split(",");
             return {
-                word: parts[0]?.trim(),
-                definition: parts.slice(1).join(",").trim()
-           

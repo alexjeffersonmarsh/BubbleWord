@@ -1,3 +1,4 @@
+
 // =========================================
 // CANVAS SETUP
 // =========================================
@@ -37,7 +38,6 @@ function playMiss() {
     miss.play();
 }
 
-// mute toggle
 document.getElementById("mute-btn").onclick = () => {
     soundOn = !soundOn;
     document.getElementById("mute-btn").textContent = soundOn ? "🔊" : "🔇";
@@ -61,7 +61,7 @@ let timer;
 
 let gameOver = false;
 
-// play again button
+// Play Again button
 let playAgainButton = {
     x: 0,
     y: 0,
@@ -70,7 +70,7 @@ let playAgainButton = {
     visible: false
 };
 
-// HUD elements
+// HUD references
 const scoreDisplay = document.getElementById("score");
 const levelDisplay = document.getElementById("level");
 const timerDisplay = document.getElementById("timer");
@@ -106,16 +106,20 @@ function createLevel() {
         let radius = 100;
 
         let x = radius + Math.random() * (canvas.width - radius * 2);
+        let y = radius + 120 + Math.random() * (canvas.height - 350);
 
-        // ✅ SAFE vertical spacing (avoids HUD + bottom bar)
-        let y = radius + 100 + Math.random() * (canvas.height - 300);
+        // ✅ LEVEL-BASED SPEED
+        let speed = (level - 1) * 0.5;
 
         bubbles.push({
             x,
             y,
             r: radius,
             text: item.definition,
-            correct: item.word === answer.word
+            correct: item.word === answer.word,
+
+            vx: (Math.random() - 0.5) * speed,
+            vy: (Math.random() - 0.5) * speed
         });
     });
 }
@@ -145,14 +149,52 @@ function startTimer() {
 }
 
 // =========================================
-// DRAW LOOP
+// UPDATE (MOVEMENT)
+// =========================================
+
+function update() {
+
+    bubbles.forEach(b => {
+
+        // LEVEL 1 → NO movement
+        if (level === 1) return;
+
+        // LEVEL 2 → horizontal only
+        if (level === 2) {
+            b.x += b.vx;
+        }
+
+        // LEVEL 3+ → full movement
+        if (level >= 3) {
+            b.x += b.vx;
+            b.y += b.vy;
+        }
+
+        // LEVEL 5+ → acceleration randomness
+        if (level >= 5) {
+            b.vx += (Math.random() - 0.5) * 0.1;
+            b.vy += (Math.random() - 0.5) * 0.1;
+        }
+
+        // bounce walls
+        if (b.x < b.r || b.x > canvas.width - b.r) {
+            b.vx *= -1;
+        }
+
+        if (b.y < b.r || b.y > canvas.height - 160) {
+            b.vy *= -1;
+        }
+    });
+}
+
+// =========================================
+// DRAW
 // =========================================
 
 function draw() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // draw bubbles
     bubbles.forEach(b => {
 
         ctx.beginPath();
@@ -170,7 +212,6 @@ function draw() {
         wrapText(b.text, b.x, b.y, b.r * 1.6);
     });
 
-    // draw Play Again button
     if (playAgainButton.visible) {
 
         ctx.fillStyle = "#34bc6e";
@@ -183,6 +224,7 @@ function draw() {
 
         ctx.fillStyle = "white";
         ctx.font = "22px Arial";
+
         ctx.fillText(
             "Play Again",
             canvas.width / 2,
@@ -192,7 +234,7 @@ function draw() {
 }
 
 // =========================================
-// TEXT WRAPPING
+// TEXT WRAP
 // =========================================
 
 function wrapText(text, x, y, maxWidth) {
@@ -229,7 +271,6 @@ canvas.onclick = (e) => {
     const x = e.offsetX;
     const y = e.offsetY;
 
-    // ✅ PLAY AGAIN CLICK
     if (gameOver && playAgainButton.visible) {
 
         if (
@@ -254,7 +295,6 @@ canvas.onclick = (e) => {
 
             totalClicks++;
 
-            // ✅ CORRECT
             if (b.correct) {
 
                 playPop();
@@ -266,12 +306,10 @@ canvas.onclick = (e) => {
 
                 bubbles = bubbles.filter(rem => rem !== b);
 
-                // ✅ LEVEL COMPLETE
                 if (bubbles.length === 0) {
 
                     let bonus = timeLeft * 2;
                     score += bonus;
-
                     scoreDisplay.textContent = score;
 
                     level++;
@@ -279,10 +317,8 @@ canvas.onclick = (e) => {
 
                     createLevel();
                 }
-            }
 
-            // ❌ INCORRECT
-            else {
+            } else {
 
                 playMiss();
 
@@ -300,7 +336,7 @@ canvas.onclick = (e) => {
 };
 
 // =========================================
-// GAME OVER SCREEN
+// GAME OVER
 // =========================================
 
 function endGame(message) {
@@ -323,12 +359,10 @@ function endGame(message) {
     ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 100);
 
     ctx.font = "28px Arial";
-
     ctx.fillText("Final Score: " + score, canvas.width / 2, canvas.height / 2 - 30);
     ctx.fillText("Correct: " + correctCount, canvas.width / 2, canvas.height / 2 + 10);
     ctx.fillText("Accuracy: " + accuracy + "%", canvas.width / 2, canvas.height / 2 + 50);
 
-    // ✅ PLAY AGAIN BUTTON
     playAgainButton.x = canvas.width / 2 - 110;
     playAgainButton.y = canvas.height / 2 + 90;
     playAgainButton.visible = true;
@@ -360,22 +394,22 @@ function restartGame() {
 
 document.getElementById("start-game-btn").onclick = () => {
 
-    vocab = window.preloadedVocab || document
-        .getElementById("bulk-vocab-input")
+    vocab =
+        window.preloadedVocab ||
+        document.getElementById("bulk-vocab-input")
         .value.split("\n")
         .map(line => {
             if (!line.includes(",")) return null;
-
-            let parts = line.split(",");
+            let p = line.split(",");
             return {
-                word: parts[0].trim(),
-                definition: parts.slice(1).join(",").trim()
+                word: p[0].trim(),
+                definition: p.slice(1).join(",").trim()
             };
         })
-        .filter(v => v !== null && v.word && v.definition);
+        .filter(v => v && v.word && v.definition);
 
     if (vocab.length < 5) {
-        alert("Please enter at least 5 valid vocabulary entries.");
+        alert("Please enter at least 5 valid entries.");
         return;
     }
 
@@ -383,10 +417,40 @@ document.getElementById("start-game-btn").onclick = () => {
     level = 1;
     correctCount = 0;
     totalClicks = 0;
-    gameOver = false;
 
     scoreDisplay.textContent = score;
     levelDisplay.textContent = level;
 
     createLevel();
 };
+
+// =========================================
+// AUTO START FROM LINK
+// =========================================
+
+if (window.preloadedVocab && window.preloadedVocab.length > 0) {
+
+    vocab = window.preloadedVocab;
+
+    score = 0;
+    level = 1;
+    correctCount = 0;
+    totalClicks = 0;
+
+    scoreDisplay.textContent = score;
+    levelDisplay.textContent = level;
+
+    createLevel();
+}
+
+// =========================================
+// LOOP
+// =========================================
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+loop();

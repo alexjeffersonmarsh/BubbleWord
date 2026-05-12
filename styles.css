@@ -1,65 +1,66 @@
-/* =========================================
-   GLOBAL RESET
-========================================= */
+
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-/* =========================================
-   BODY
-========================================= */
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: linear-gradient(to bottom, #9ad9ff, #e6f7ff);
-    height: 100vh;
+    font-family: Arial;
     display: flex;
-    overflow: hidden;
-    color: #2b3a42;
+    height: 100vh;
 }
 
-/* =========================================
-   TEACHER PANEL (index.html)
-========================================= */
 #teacher-panel {
-    width: 320px;
-    background: rgba(255, 255, 255, 0.96);
-    border-right: 4px solid #cde7f5;
-    padding: 20px;
-    overflow-y: auto;
-    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.08);
-    z-index: 10;
+    width: 300px;
+    padding: 15px;
+    background: white;
 }
 
-#teacher-panel h2 {
-    font-size: 28px;
-    margin-bottom: 12px;
-    color: #1d3d57;
-}
-
-#teacher-panel p {
-    font-size: 14px;
-    margin-bottom: 16px;
-    color: #5a6d7c;
-}
-
-/* =========================================
-   TEXTAREA
-========================================= */
 #bulk-vocab-input {
     width: 100%;
-    height: 400px;
-    padding: 12px;
-    border-radius: 12px;
-    border: 2px solid #b8d7e8;
-    font-size: 14px;
-    resize: none;
+    height: 300px;
 }
 
-/* =========================================
-   BUTTONS
-========================================= */
 button {
-    border: none;
-    border-radius: 
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+#game-container {
+    flex: 1;
+    position: relative;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+    background: skyblue;
+}
+
+#hud {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.hud-box {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+#target-word-bar {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: white;
+    text-align: center;
+}
+
+#target-word {
+    font-size: 42px;
+}

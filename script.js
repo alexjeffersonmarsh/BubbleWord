@@ -8,7 +8,7 @@ const ctx = canvas.getContext("2d");
 
 function resizeCanvas() {
     const panelWidth =
-        document.getElementById("teacher-panel").offsetWidth;
+        document.getElementById("teacher-panel")?.offsetWidth || 0;
 
     canvas.width = window.innerWidth - panelWidth;
     canvas.height = window.innerHeight;
@@ -18,23 +18,48 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
 // =========================================
-// SOUND EFFECTS
+// SOUND SYSTEM (UPGRADED)
 // =========================================
 
+let soundOn = true;
+
+const popSounds = [
+    new Audio("https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg"),
+    new Audio("https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg"),
+    new Audio("https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg")
+];
+
+const missSound = new Audio(
+    "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"
+);
+
+popSounds.forEach(s => s.volume = 0.4);
+missSound.volume = 0.5;
+
 function playPopSound() {
-    const audio = new Audio(
-        "https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg"
-    );
-    audio.volume = 0.4;
-    audio.play();
+    if (!soundOn) return;
+
+    const sound = popSounds[Math.floor(Math.random() * popSounds.length)];
+    sound.currentTime = 0;
+    sound.playbackRate = 0.9 + Math.random() * 0.2;
+    sound.play();
 }
 
 function playMissSound() {
-    const audio = new Audio(
-        "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"
-    );
-    audio.volume = 0.5;
-    audio.play();
+    if (!soundOn) return;
+
+    missSound.currentTime = 0;
+    missSound.playbackRate = 1 + Math.random() * 0.2;
+    missSound.play();
+}
+
+// toggle button
+const muteBtn = document.getElementById("mute-btn");
+if (muteBtn) {
+    muteBtn.onclick = () => {
+        soundOn = !soundOn;
+        muteBtn.textContent = soundOn ? "🔊" : "🔇";
+    };
 }
 
 // =========================================
@@ -79,14 +104,10 @@ function startTimer() {
     timerDisplay.textContent = timeLeft;
 
     timerInterval = setInterval(() => {
-
         timeLeft--;
         timerDisplay.textContent = timeLeft;
 
-        if (timeLeft <= 0) {
-            endGame("Time's up!");
-        }
-
+        if (timeLeft <= 0) endGame("Time's up!");
     }, 1000);
 }
 
@@ -96,9 +117,8 @@ function startTimer() {
 
 function getVocabularyList() {
 
-    const input = document.getElementById("bulk-vocab-input").value;
-
-    return input.split("\n")
+    return document.getElementById("bulk-vocab-input")
+        .value.split("\n")
         .map(line => line.split(","))
         .filter(parts => parts.length > 1)
         .map(parts => ({
@@ -218,14 +238,12 @@ function wrapText(text, x, y, maxWidth, lineHeight) {
     let line = "";
     let lines = [];
 
-    for (let i = 0; i < words.length; i++) {
+    for (let w of words) {
+        let test = line + w + " ";
 
-        let test = line + words[i] + " ";
-        let width = ctx.measureText(test).width;
-
-        if (width > maxWidth && i > 0) {
+        if (ctx.measureText(test).width > maxWidth) {
             lines.push(line);
-            line = words[i] + " ";
+            line = w + " ";
         } else {
             line = test;
         }
@@ -233,7 +251,7 @@ function wrapText(text, x, y, maxWidth, lineHeight) {
 
     lines.push(line);
 
-    let startY = y - ((lines.length - 1) * lineHeight) / 2;
+    let startY = y - (lines.length * lineHeight) / 2;
 
     lines.forEach((l, i) => {
         ctx.fillText(l, x, startY + i * lineHeight);
@@ -283,7 +301,6 @@ function createLevel() {
                 let dx = x - b.x;
                 let dy = y - b.y;
                 let dist = Math.sqrt(dx * dx + dy * dy);
-
                 if (dist < radius * 2.6) safe = false;
             }
         }
@@ -320,6 +337,7 @@ function drawGame() {
 
         ctx.fillStyle = flashColor;
         ctx.globalAlpha = flashAlpha;
+
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.globalAlpha = 1;
@@ -330,7 +348,7 @@ function drawGame() {
 }
 
 // =========================================
-// CLICK
+// CLICK HANDLER
 // =========================================
 
 canvas.addEventListener("click", (event) => {
@@ -346,11 +364,11 @@ canvas.addEventListener("click", (event) => {
         let dx = mx - bubble.x;
         let dy = my - bubble.y;
 
-        if (Math.sqrt(dx * dx + dy * dy) < bubble.radius) {
+        if (Math.sqrt(dx*dx + dy*dy) < bubble.radius) {
 
             if (bubble.correct) {
 
-                playPopSound(); // ✅ SOUND
+                playPopSound();
 
                 score += 100;
                 scoreDisplay.textContent = score;
@@ -394,7 +412,7 @@ canvas.addEventListener("click", (event) => {
 
             } else {
 
-                playMissSound(); // ✅ SOUND
+                playMissSound();
 
                 score = Math.max(0, score - 25);
                 scoreDisplay.textContent = score;
@@ -438,7 +456,7 @@ function endGame(message) {
 }
 
 // =========================================
-// START
+// START BUTTON
 // =========================================
 
 document.getElementById("start-game-btn")
@@ -462,7 +480,7 @@ document.getElementById("start-game-btn")
 });
 
 // =========================================
-// AUTO-START LINK
+// AUTO START (LINK)
 // =========================================
 
 if (window.preloadedVocab) {
@@ -480,7 +498,7 @@ if (window.preloadedVocab) {
 }
 
 // =========================================
-// LOOP
+// GAME LOOP
 // =========================================
 
 function gameLoop() {

@@ -1,15 +1,8 @@
-
-// =========================================
-// CANVAS SETUP
-// =========================================
-
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 function resizeCanvas() {
-    const panelWidth =
-        document.getElementById("teacher-panel")?.offsetWidth || 0;
-
+    const panelWidth = document.getElementById("teacher-panel")?.offsetWidth || 0;
     canvas.width = window.innerWidth - panelWidth;
     canvas.height = window.innerHeight;
 }
@@ -17,511 +10,213 @@ function resizeCanvas() {
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
-// =========================================
-// SOUND SYSTEM (UPGRADED)
-// =========================================
-
+// ================= SOUND =================
 let soundOn = true;
 
-const popSounds = [
-    new Audio("https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg"),
-    new Audio("https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg"),
-    new Audio("https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg")
-];
+const pop = new Audio("https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg");
+const miss = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
 
-const missSound = new Audio(
-    "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"
-);
-
-popSounds.forEach(s => s.volume = 0.4);
-missSound.volume = 0.5;
-
-function playPopSound() {
+function playPop() {
     if (!soundOn) return;
-
-    const sound = popSounds[Math.floor(Math.random() * popSounds.length)];
-    sound.currentTime = 0;
-    sound.playbackRate = 0.9 + Math.random() * 0.2;
-    sound.play();
+    pop.currentTime = 0;
+    pop.play();
 }
 
-function playMissSound() {
+function playMiss() {
     if (!soundOn) return;
-
-    missSound.currentTime = 0;
-    missSound.playbackRate = 1 + Math.random() * 0.2;
-    missSound.play();
+    miss.currentTime = 0;
+    miss.play();
 }
 
-// toggle button
-const muteBtn = document.getElementById("mute-btn");
-if (muteBtn) {
-    muteBtn.onclick = () => {
-        soundOn = !soundOn;
-        muteBtn.textContent = soundOn ? "🔊" : "🔇";
-    };
-}
+document.getElementById("mute-btn").onclick = () => {
+    soundOn = !soundOn;
+    document.getElementById("mute-btn").textContent = soundOn ? "🔊" : "🔇";
+};
 
-// =========================================
-// GAME STATE
-// =========================================
+// ================= GAME =================
 
 let score = 0;
 let level = 1;
-const maxLevels = 10;
-
 let timeLeft = 60;
-let timerInterval = null;
-
-let attemptsLeft = 20;
-
+let attempts = 20;
+let vocab = [];
 let bubbles = [];
-let vocabList = [];
-let currentWord = null;
+let timer;
 
-let gameOver = false;
-
-// visuals
-let flashColor = null;
-let flashAlpha = 0;
-
-// HUD
 const scoreDisplay = document.getElementById("score");
 const levelDisplay = document.getElementById("level");
 const timerDisplay = document.getElementById("timer");
 const attemptsDisplay = document.getElementById("attempts");
 const targetWordDisplay = document.getElementById("target-word");
 
-// =========================================
-// TIMER
-// =========================================
-
-function startTimer() {
-
-    clearInterval(timerInterval);
-
-    timeLeft = 60;
-    timerDisplay.textContent = timeLeft;
-
-    timerInterval = setInterval(() => {
-        timeLeft--;
-        timerDisplay.textContent = timeLeft;
-
-        if (timeLeft <= 0) endGame("Time's up!");
-    }, 1000);
-}
-
-// =========================================
-// PARSE VOCAB
-// =========================================
-
-function getVocabularyList() {
-
-    return document.getElementById("bulk-vocab-input")
-        .value.split("\n")
-        .map(line => line.split(","))
-        .filter(parts => parts.length > 1)
-        .map(parts => ({
-            word: parts[0].trim(),
-            definition: parts.slice(1).join(",").trim()
-        }));
-}
-
-// =========================================
-// BUBBLE CLASS
-// =========================================
-
-class Bubble {
-
-    constructor(x, y, radius, text, correct, speed) {
-        this.x = x;
-        this.y = y;
-        this.radius = radius;
-        this.text = text;
-        this.correct = correct;
-
-        this.vx = speed;
-        this.vy = 0;
-
-        this.popping = false;
-        this.popFrame = 0;
-    }
-
-    update() {
-
-        if (level >= 2) {
-
-            this.x += this.vx;
-            this.y += this.vy;
-
-            if (level >= 3) {
-                this.y += Math.sin(Date.now() / 300 + this.x) * 0.5;
-            }
-
-            if (level >= 5) {
-                this.vy += (Math.random() - 0.5) * 0.2;
-            }
-
-            if (this.x < this.radius || this.x > canvas.width - this.radius) {
-                this.vx *= -1;
-            }
-
-            if (this.y < this.radius || this.y > canvas.height - 200) {
-                this.vy *= -1;
-            }
-        }
-    }
-
-    draw() {
-
-        if (this.popping) {
-            this.popFrame++;
-            this.radius += 2;
-
-            ctx.globalAlpha = 1 - this.popFrame / 10;
-
-            if (this.popFrame > 10) {
-                ctx.globalAlpha = 1;
-                return;
-            }
-        }
-
-        let g = ctx.createRadialGradient(
-            this.x - this.radius * 0.3,
-            this.y - this.radius * 0.3,
-            this.radius * 0.2,
-            this.x,
-            this.y,
-            this.radius
-        );
-
-        g.addColorStop(0, "rgba(255,255,255,0.9)");
-        g.addColorStop(0.4, "rgba(200,230,255,0.6)");
-        g.addColorStop(1, "rgba(150,200,255,0.3)");
-
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = g;
-        ctx.fill();
-
-        ctx.strokeStyle = "rgba(255,255,255,0.6)";
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(
-            this.x - this.radius * 0.35,
-            this.y - this.radius * 0.35,
-            this.radius * 0.18,
-            0,
-            Math.PI * 2
-        );
-        ctx.fillStyle = "rgba(255,255,255,0.8)";
-        ctx.fill();
-
-        ctx.fillStyle = "#123";
-        ctx.font = "15px Arial";
-        ctx.textAlign = "center";
-
-        wrapText(this.text, this.x, this.y, this.radius * 1.4, 18);
-
-        ctx.globalAlpha = 1;
-    }
-}
-
-// =========================================
-// TEXT WRAP
-// =========================================
-
-function wrapText(text, x, y, maxWidth, lineHeight) {
-
-    const words = text.split(" ");
-    let line = "";
-    let lines = [];
-
-    for (let w of words) {
-        let test = line + w + " ";
-
-        if (ctx.measureText(test).width > maxWidth) {
-            lines.push(line);
-            line = w + " ";
-        } else {
-            line = test;
-        }
-    }
-
-    lines.push(line);
-
-    let startY = y - (lines.length * lineHeight) / 2;
-
-    lines.forEach((l, i) => {
-        ctx.fillText(l, x, startY + i * lineHeight);
-    });
-}
-
-// =========================================
-// CREATE LEVEL
-// =========================================
+// ================= CREATE LEVEL =================
 
 function createLevel() {
 
-    attemptsLeft = 20;
-    attemptsDisplay.textContent = attemptsLeft;
+    bubbles = [];
+
+    attempts = 20;
+    attemptsDisplay.textContent = attempts;
 
     startTimer();
 
-    bubbles = [];
+    let selected = [...vocab].sort(() => Math.random() - 0.5).slice(0, 10);
 
-    currentWord =
-        vocabList[Math.floor(Math.random() * vocabList.length)];
+    const answer = selected[Math.floor(Math.random() * selected.length)];
 
-    targetWordDisplay.textContent =
-        currentWord.word.toUpperCase();
-
-    let selected = [...vocabList]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 10);
-
-    if (!selected.includes(currentWord)) {
-        selected[0] = currentWord;
-    }
+    targetWordDisplay.textContent = answer.word.toUpperCase();
 
     selected.forEach(item => {
 
-        let radius = 80;
-        let x, y, safe = false;
+        let radius = 100;
 
-        while (!safe) {
+        let x = radius + Math.random() * (canvas.width - radius * 2);
+        let y = radius + Math.random() * (canvas.height - 200);
 
-            x = radius + Math.random() * (canvas.width - radius * 2);
-            y = radius + Math.random() * (canvas.height - 250);
+        bubbles.push({
+            x, y,
+            r: radius,
+            text: item.definition,
+            correct: item.word === answer.word
+        });
 
-            safe = true;
-
-            for (let b of bubbles) {
-                let dx = x - b.x;
-                let dy = y - b.y;
-                let dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < radius * 2.6) safe = false;
-            }
-        }
-
-        let speed = (level - 1) * 0.8 * (Math.random() - 0.5);
-
-        bubbles.push(
-            new Bubble(
-                x,
-                y,
-                radius,
-                item.definition,
-                item.word === currentWord.word,
-                speed
-            )
-        );
     });
 }
 
-// =========================================
-// DRAW
-// =========================================
+// ================= TIMER =================
 
-function drawGame() {
+function startTimer() {
+    clearInterval(timer);
+    timeLeft = 60;
+    timerDisplay.textContent = timeLeft;
+
+    timer = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = timeLeft;
+
+        if (timeLeft <= 0) endGame("TIME'S UP!");
+    }, 1000);
+}
+
+// ================= DRAW =================
+
+function draw() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     bubbles.forEach(b => {
-        b.update();
-        b.draw();
+
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+
+        ctx.fillStyle = "black";
+        ctx.textAlign = "center";
+        ctx.font = "20px Arial";
+
+        wrapText(b.text, b.x, b.y, b.r * 1.5);
     });
-
-    if (flashColor) {
-
-        ctx.fillStyle = flashColor;
-        ctx.globalAlpha = flashAlpha;
-
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.globalAlpha = 1;
-
-        flashAlpha -= 0.05;
-        if (flashAlpha <= 0) flashColor = null;
-    }
 }
 
-// =========================================
-// CLICK HANDLER
-// =========================================
+function wrapText(text, x, y, maxWidth) {
+    const words = text.split(" ");
+    let lines = [];
+    let line = "";
 
-canvas.addEventListener("click", (event) => {
+    words.forEach(word => {
+        let test = line + word + " ";
+        if (ctx.measureText(test).width > maxWidth) {
+            lines.push(line);
+            line = word + " ";
+        } else {
+            line = test;
+        }
+    });
 
-    if (gameOver) return;
+    lines.push(line);
 
-    const rect = canvas.getBoundingClientRect();
-    const mx = event.clientX - rect.left;
-    const my = event.clientY - rect.top;
+    lines.forEach((l, i) => {
+        ctx.fillText(l, x, y + i*18 - 10);
+    });
+}
 
-    for (let bubble of bubbles) {
+// ================= CLICK =================
 
-        let dx = mx - bubble.x;
-        let dy = my - bubble.y;
+canvas.onclick = e => {
 
-        if (Math.sqrt(dx*dx + dy*dy) < bubble.radius) {
+    for (let b of bubbles) {
 
-            if (bubble.correct) {
+        let dx = e.offsetX - b.x;
+        let dy = e.offsetY - b.y;
 
-                playPopSound();
+        if (Math.sqrt(dx*dx + dy*dy) < b.r * 1.1) {
+
+            if (b.correct) {
+
+                playPop();
 
                 score += 100;
                 scoreDisplay.textContent = score;
 
-                flashColor = "green";
-                flashAlpha = 0.25;
+                bubbles = bubbles.filter(x => x !== b);
 
-                bubble.popping = true;
-
-                setTimeout(() => {
-
-                    bubbles = bubbles.filter(b => b !== bubble);
-
-                    if (bubbles.length > 0) {
-
-                        let next =
-                            bubbles[Math.floor(Math.random() * bubbles.length)];
-
-                        bubbles.forEach(b => b.correct = (b === next));
-
-                        currentWord =
-                            vocabList.find(v => v.definition === next.text);
-
-                        targetWordDisplay.textContent =
-                            currentWord.word.toUpperCase();
-
-                    } else {
-
-                        level++;
-
-                        if (level > maxLevels) {
-                            endGame("YOU WIN!");
-                            return;
-                        }
-
-                        levelDisplay.textContent = level;
-                        createLevel();
-                    }
-
-                }, 120);
+                if (bubbles.length === 0) {
+                    level++;
+                    createLevel();
+                }
 
             } else {
 
-                playMissSound();
+                playMiss();
 
-                score = Math.max(0, score - 25);
-                scoreDisplay.textContent = score;
+                attempts--;
+                attemptsDisplay.textContent = attempts;
 
-                attemptsLeft--;
-                attemptsDisplay.textContent = attemptsLeft;
-
-                flashColor = "red";
-                flashAlpha = 0.25;
-
-                if (attemptsLeft <= 0) {
-                    endGame("Out of attempts!");
-                }
+                if (attempts <= 0) endGame("OUT OF ATTEMPTS!");
             }
 
-            break;
         }
     }
-});
+};
 
-// =========================================
-// GAME OVER
-// =========================================
+// ================= GAME OVER =================
 
-function endGame(message) {
+function endGame(msg) {
 
-    gameOver = true;
-    clearInterval(timerInterval);
-
-    bubbles = [];
+    clearInterval(timer);
 
     ctx.fillStyle = "rgba(0,0,0,0.7)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillRect(0,0,canvas.width,canvas.height);
 
     ctx.fillStyle = "white";
     ctx.font = "40px Arial";
-    ctx.textAlign = "center";
 
-    ctx.fillText(message, canvas.width / 2, canvas.height / 2 - 20);
-    ctx.fillText("Score: " + score, canvas.width / 2, canvas.height / 2 + 40);
+    ctx.fillText(msg, canvas.width/2, canvas.height/2);
 }
 
-// =========================================
-// START BUTTON
-// =========================================
+// ================= START =================
 
-document.getElementById("start-game-btn")
-.addEventListener("click", () => {
+document.getElementById("start-game-btn").onclick = () => {
 
-    vocabList = window.preloadedVocab || getVocabularyList();
-
-    if (vocabList.length < 10) {
-        alert("Enter at least 10 words.");
-        return;
-    }
-
-    score = 0;
-    level = 1;
-    gameOver = false;
-
-    scoreDisplay.textContent = score;
-    levelDisplay.textContent = level;
+    vocab = window.preloadedVocab || document.getElementById("bulk-vocab-input")
+    .value.split("\n").map(x => {
+        let p = x.split(",");
+        return { word:p[0], definition:p[1] };
+    });
 
     createLevel();
-});
+};
 
-// =========================================
-// AUTO START (LINK)
-// =========================================
-
+// AUTO START
 if (window.preloadedVocab) {
-
-    vocabList = window.preloadedVocab;
-
-    score = 0;
-    level = 1;
-    gameOver = false;
-
-    scoreDisplay.textContent = score;
-    levelDisplay.textContent = level;
-
+    vocab = window.preloadedVocab;
     createLevel();
 }
 
-// =========================================
-// GAME LOOP
-// =========================================
-
-function gameLoop() {
-    drawGame();
-    requestAnimationFrame(gameLoop);
+// LOOP
+function loop() {
+    draw();
+    requestAnimationFrame(loop);
 }
-
-// =========================================
-// AUTO START FROM SHARED LINK (REQUIRED)
-// =========================================
-
-if (window.preloadedVocab && window.preloadedVocab.length > 0) {
-
-    vocabList = window.preloadedVocab;
-
-    score = 0;
-    level = 1;
-    gameOver = false;
-
-    scoreDisplay.textContent = score;
-    levelDisplay.textContent = level;
-
-    createLevel();
-}
-
-gameLoop();
+loop();

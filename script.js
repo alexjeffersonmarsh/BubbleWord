@@ -101,27 +101,45 @@ function createLevel() {
     targetWordDisplay.textContent =
         answer.word.toUpperCase();
 
-    selected.forEach(item => {
+selected.forEach(item => {
 
-        let radius = 100;
+    let radius = 90;
+    let x, y;
+    let safe = false;
 
-        let x = radius + Math.random() * (canvas.width - radius * 2);
-        let y = radius + 120 + Math.random() * (canvas.height - 350);
+    while (!safe) {
 
-        // ✅ LEVEL-BASED SPEED
-        let speed = (level - 1) * 0.5;
+        x = radius + Math.random() * (canvas.width - radius * 2);
+        y = radius + 120 + Math.random() * (canvas.height - 350);
 
-        bubbles.push({
-            x,
-            y,
-            r: radius,
-            text: item.definition,
-            correct: item.word === answer.word,
+        safe = true;
 
-            vx: (Math.random() - 0.5) * speed,
-            vy: (Math.random() - 0.5) * speed
-        });
+        for (let other of bubbles) {
+
+            let dx = x - other.x;
+            let dy = y - other.y;
+
+            let dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < radius * 2.4) {
+                safe = false;
+                break;
+            }
+        }
+    }
+
+    let speed = (level - 1) * 0.5;
+
+    bubbles.push({
+        x,
+        y,
+        r: radius,
+        text: item.definition,
+        correct: item.word === answer.word,
+        vx: (Math.random() - 0.5) * speed,
+        vy: (Math.random() - 0.5) * speed
     });
+});
 }
 
 // =========================================

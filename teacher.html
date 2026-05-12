@@ -1,6 +1,7 @@
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>BubbleWord Teacher Setup</title>
@@ -12,14 +13,14 @@
         body {
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
+            align-items: flex-start;
+            padding: 20px;
             background: linear-gradient(to bottom, #9ad9ff, #e6f7ff);
             font-family: Arial, Helvetica, sans-serif;
         }
 
         #teacher-box {
-            width: 600px;
+            width: 650px;
             background: white;
             padding: 25px;
             border-radius: 16px;
@@ -31,24 +32,22 @@
             color: #1d3d57;
         }
 
-        p {
-            margin-bottom: 10px;
-            color: #555;
-        }
-
-        textarea {
+        textarea, input {
             width: 100%;
-            height: 300px;
             padding: 12px;
             border-radius: 10px;
             border: 2px solid #b8d7e8;
             font-size: 14px;
+            margin-bottom: 12px;
+        }
+
+        textarea {
+            height: 260px;
             resize: none;
         }
 
         button {
             width: 100%;
-            margin-top: 12px;
             padding: 12px;
             border: none;
             border-radius: 10px;
@@ -56,11 +55,10 @@
             color: white;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.2s;
+            margin-top: 10px;
         }
 
         button:hover {
-            transform: translateY(-2px);
             background: linear-gradient(to bottom, #69e59d, #2cab63);
         }
 
@@ -68,17 +66,11 @@
             background: linear-gradient(to bottom, #5ec8ff, #37aff2);
         }
 
-        #copy-btn:hover {
-            background: linear-gradient(to bottom, #74d1ff, #2ca4e9);
-        }
-
-        #link-output {
-            margin-top: 15px;
-            font-size: 14px;
-            word-break: break-all;
+        #saved-sets div {
+            margin-top: 10px;
+            padding: 10px;
             background: #f1faff;
-            padding: 12px;
-            border-radius: 8px;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -89,8 +81,7 @@
 
     <h2>Create Your BubbleWord Game</h2>
 
-    <p>Enter vocabulary (one per line):</p>
-    <p><strong>Format:</strong> word, definition</p>
+    <input id="set-name" placeholder="Enter set name (e.g. Unit 3 Nouns)">
 
     <textarea id="teacher-input">
 amicus, friend
@@ -119,17 +110,17 @@ luna, moon
 
     <div id="link-output"></div>
 
-    <button id="copy-btn" style="display:none;" onclick="copyLink()">
-        Copy Link
-    </button>
+    <div id="qr-output" style="text-align:center; margin-top:15px;"></div>
+
+    <button id="copy-btn" style="display:none;" onclick="copyLink()">Copy Link</button>
+
+    <h3 style="margin-top:20px;">Saved Sets</h3>
+    <div id="saved-sets"></div>
 
 </div>
 
 <script>
 
-// =========================================
-// GLOBAL LINK STORAGE
-// =========================================
 let generatedLink = "";
 
 // =========================================
@@ -137,43 +128,48 @@ let generatedLink = "";
 // =========================================
 function generateLink() {
 
+    const name = document.getElementById("set-name").value.trim();
     const input = document.getElementById("teacher-input").value;
+
+    if (!name) {
+        alert("Please enter a name for this set.");
+        return;
+    }
 
     const lines = input.split("\n");
 
     const encoded = lines
-        .filter(line => line.trim() !== "")
-        .map(line => {
-
-            const parts = line.split(",");
-
+        .filter(l => l.trim() !== "")
+        .map(l => {
+            const parts = l.split(",");
             if (parts.length < 2) return null;
-
-            const word = parts[0].trim();
-            const def = parts.slice(1).join(",").trim();
-
-            return word + "|" + def;
+            return parts[0].trim() + "|" + parts.slice(1).join(",").trim();
         })
         .filter(x => x !== null)
         .join(";");
 
+    const basePath = window.location.pathname.replace("teacher.html", "");
 
-const basePath = window.location.pathname.replace("teacher.html", "");
-
-generatedLink =
-    window.location.origin +
-    basePath +
-    "?vocab=" +
-    encodeURIComponent(encoded);
-
+    generatedLink =
+        window.location.origin +
+        basePath +
+        "?vocab=" +
+        encodeURIComponent(encoded);
 
     document.getElementById("link-output").innerHTML =
-        "<strong>Share this link:</strong><br><br>" +
-        "<a href='" + generatedLink + "' target='_blank'>" +
-        generatedLink +
-        "</a>";
+        "<strong>Share this link:</strong><br><a href='" + generatedLink +
+        "' target='_blank'>" + generatedLink + "</a>";
 
     document.getElementById("copy-btn").style.display = "block";
+
+    const qrURL =
+        "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" +
+        encodeURIComponent(generatedLink);
+
+    document.getElementById("qr-output").innerHTML =
+        "<p><strong>Scan QR:</strong></p><img src='" + qrURL + "'>";
+
+    saveSet(name, generatedLink, input);
 }
 
 // =========================================
@@ -181,20 +177,90 @@ generatedLink =
 // =========================================
 function copyLink() {
 
-    navigator.clipboard.writeText(generatedLink).then(() => {
+    navigator.clipboard.writeText(generatedLink);
 
-        const btn = document.getElementById("copy-btn");
+    const btn = document.getElementById("copy-btn");
 
-        btn.textContent = "Copied! ✅";
+    btn.textContent = "Copied! ✅";
 
-        setTimeout(() => {
-            btn.textContent = "Copy Link";
-        }, 1500);
-
-    }).catch(() => {
-        alert("Copy failed. Please copy manually.");
-    });
+    setTimeout(() => {
+        btn.textContent = "Copy Link";
+    }, 1500);
 }
+
+// =========================================
+// SAVE SETS
+// =========================================
+function saveSet(name, link, vocab) {
+
+    let sets = JSON.parse(localStorage.getItem("bubbleword_sets")) || [];
+
+    sets = sets.filter(s => s.name !== name);
+
+    sets.unshift({
+        name,
+        link,
+        vocab,
+        date: new Date().toLocaleDateString()
+    });
+
+    localStorage.setItem("bubbleword_sets", JSON.stringify(sets));
+
+    displaySavedSets();
+}
+
+// =========================================
+// DISPLAY SAVED SETS
+// =========================================
+function displaySavedSets() {
+
+    const container = document.getElementById("saved-sets");
+
+    let sets = JSON.parse(localStorage.getItem("bubbleword_sets")) || [];
+
+    if (sets.length === 0) {
+        container.innerHTML = "<p>No saved sets yet.</p>";
+        return;
+    }
+
+    container.innerHTML = sets.map((set, i) => `
+        <div>
+            <strong>${set.name}</strong> (${set.date})<br>
+            <  <span onclick="loadSet(${i})" style="cursor:pointer;">Edit</span> |
+            <span onclick="deleteSet(${i})" style="cursor:pointer;color:red;">Delete</span>
+        </div>
+    `).join("");
+}
+
+// =========================================
+// LOAD SET
+// =========================================
+function loadSet(i) {
+
+    const sets = JSON.parse(localStorage.getItem("bubbleword_sets")) || [];
+
+    document.getElementById("set-name").value = sets[i].name;
+    document.getElementById("teacher-input").value = sets[i].vocab;
+}
+
+// =========================================
+// DELETE SET
+// =========================================
+function deleteSet(i) {
+
+    let sets = JSON.parse(localStorage.getItem("bubbleword_sets")) || [];
+
+    sets.splice(i, 1);
+
+    localStorage.setItem("bubbleword_sets", JSON.stringify(sets));
+
+    displaySavedSets();
+}
+
+// =========================================
+// INITIAL LOAD
+// =========================================
+displaySavedSets();
 
 </script>
 

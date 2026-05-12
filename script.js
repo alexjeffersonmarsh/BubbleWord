@@ -18,6 +18,26 @@ resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
 // =========================================
+// SOUND EFFECTS
+// =========================================
+
+function playPopSound() {
+    const audio = new Audio(
+        "https://actions.google.com/sounds/v1/bubbles/bubble_pop.ogg"
+    );
+    audio.volume = 0.4;
+    audio.play();
+}
+
+function playMissSound() {
+    const audio = new Audio(
+        "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"
+    );
+    audio.volume = 0.5;
+    audio.play();
+}
+
+// =========================================
 // GAME STATE
 // =========================================
 
@@ -71,7 +91,7 @@ function startTimer() {
 }
 
 // =========================================
-// PARSE VOCAB (fallback)
+// PARSE VOCAB
 // =========================================
 
 function getVocabularyList() {
@@ -114,17 +134,14 @@ class Bubble {
             this.x += this.vx;
             this.y += this.vy;
 
-            // gentle wave (level 3+)
             if (level >= 3) {
                 this.y += Math.sin(Date.now() / 300 + this.x) * 0.5;
             }
 
-            // vertical randomness (level 5+)
             if (level >= 5) {
                 this.vy += (Math.random() - 0.5) * 0.2;
             }
 
-            // bounce walls
             if (this.x < this.radius || this.x > canvas.width - this.radius) {
                 this.vx *= -1;
             }
@@ -137,7 +154,6 @@ class Bubble {
 
     draw() {
 
-        // POP ANIMATION
         if (this.popping) {
             this.popFrame++;
             this.radius += 2;
@@ -171,7 +187,6 @@ class Bubble {
         ctx.strokeStyle = "rgba(255,255,255,0.6)";
         ctx.stroke();
 
-        // highlight
         ctx.beginPath();
         ctx.arc(
             this.x - this.radius * 0.35,
@@ -183,7 +198,6 @@ class Bubble {
         ctx.fillStyle = "rgba(255,255,255,0.8)";
         ctx.fill();
 
-        // text
         ctx.fillStyle = "#123";
         ctx.font = "15px Arial";
         ctx.textAlign = "center";
@@ -266,10 +280,8 @@ function createLevel() {
             safe = true;
 
             for (let b of bubbles) {
-
                 let dx = x - b.x;
                 let dy = y - b.y;
-
                 let dist = Math.sqrt(dx * dx + dy * dy);
 
                 if (dist < radius * 2.6) safe = false;
@@ -292,7 +304,7 @@ function createLevel() {
 }
 
 // =========================================
-// DRAW GAME
+// DRAW
 // =========================================
 
 function drawGame() {
@@ -304,26 +316,21 @@ function drawGame() {
         b.draw();
     });
 
-    // FLASH EFFECT
     if (flashColor) {
 
         ctx.fillStyle = flashColor;
         ctx.globalAlpha = flashAlpha;
-
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         ctx.globalAlpha = 1;
 
         flashAlpha -= 0.05;
-
-        if (flashAlpha <= 0) {
-            flashColor = null;
-        }
+        if (flashAlpha <= 0) flashColor = null;
     }
 }
 
 // =========================================
-// CLICK HANDLER
+// CLICK
 // =========================================
 
 canvas.addEventListener("click", (event) => {
@@ -341,8 +348,9 @@ canvas.addEventListener("click", (event) => {
 
         if (Math.sqrt(dx * dx + dy * dy) < bubble.radius) {
 
-            // ✅ CORRECT
             if (bubble.correct) {
+
+                playPopSound(); // ✅ SOUND
 
                 score += 100;
                 scoreDisplay.textContent = score;
@@ -384,10 +392,9 @@ canvas.addEventListener("click", (event) => {
 
                 }, 120);
 
-            }
+            } else {
 
-            // ❌ INCORRECT
-            else {
+                playMissSound(); // ✅ SOUND
 
                 score = Math.max(0, score - 25);
                 scoreDisplay.textContent = score;
@@ -431,7 +438,7 @@ function endGame(message) {
 }
 
 // =========================================
-// START BUTTON
+// START
 // =========================================
 
 document.getElementById("start-game-btn")
@@ -455,7 +462,7 @@ document.getElementById("start-game-btn")
 });
 
 // =========================================
-// AUTO-START IF LINK USED
+// AUTO-START LINK
 // =========================================
 
 if (window.preloadedVocab) {
@@ -473,7 +480,7 @@ if (window.preloadedVocab) {
 }
 
 // =========================================
-// GAME LOOP
+// LOOP
 // =========================================
 
 function gameLoop() {
@@ -482,4 +489,3 @@ function gameLoop() {
 }
 
 gameLoop();
-``

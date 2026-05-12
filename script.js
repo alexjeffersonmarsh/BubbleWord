@@ -360,10 +360,33 @@ function restartGame() {
 
 document.getElementById("start-game-btn").onclick = () => {
 
-    vocab =
-        window.preloadedVocab ||
-        document.getElementById("bulk-vocab-input")
+    vocab = window.preloadedVocab || document
+        .getElementById("bulk-vocab-input")
         .value.split("\n")
         .map(line => {
+            if (!line.includes(",")) return null;
+
             let parts = line.split(",");
             return {
+                word: parts[0].trim(),
+                definition: parts.slice(1).join(",").trim()
+            };
+        })
+        .filter(v => v !== null && v.word && v.definition);
+
+    if (vocab.length < 5) {
+        alert("Please enter at least 5 valid vocabulary entries.");
+        return;
+    }
+
+    score = 0;
+    level = 1;
+    correctCount = 0;
+    totalClicks = 0;
+    gameOver = false;
+
+    scoreDisplay.textContent = score;
+    levelDisplay.textContent = level;
+
+    createLevel();
+};

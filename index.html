@@ -5,13 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BubbleWord</title>
 
+<!-- ✅ CSS -->
 <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
 
+<!-- =========================================
+     TEACHER PANEL
+========================================= -->
+
 <div id="teacher-panel">
+
     <h2>BubbleWord</h2>
+
+    <p>Enter one vocabulary word and definition per line.</p>
 
     <textarea id="bulk-vocab-input">
 amicus, friend
@@ -27,35 +35,70 @@ dominus, master/lord
     </textarea>
 
     <button id="start-game-btn">Start Game</button>
+
 </div>
+
+<!-- =========================================
+     GAME AREA
+========================================= -->
 
 <div id="game-container">
 
-<canvas id="gameCanvas"></canvas>
+    <canvas id="gameCanvas"></canvas>
 
-<div id="hud">
+    <!-- ✅ LEFT HUD -->
+    <div id="hud-left">
 
-<div class="hud-box">Score: <span id="score">0</span></div>
-<div class="hud-box">Level: <span id="level">1</span></div>
-<div class="hud-box">Time: <span id="timer">60</span></div>
-<div class="hud-box">Attempts: <span id="attempts">20</span></div>
+        <div class="hud-box">
+            Score: <span id="score">0</span>
+        </div>
 
-<div class="hud-box">
-<button id="mute-btn">🔊</button>
+        <div class="hud-box">
+            Level: <span id="level">1</span>
+        </div>
+
+    </div>
+
+    <!-- ✅ RIGHT HUD -->
+    <div id="hud-right">
+
+        <div class="hud-box">
+            Time: <span id="timer">60</span>
+        </div>
+
+        <div class="hud-box">
+            Shots Left: <span id="attempts">20</span>
+        </div>
+
+        <div class="hud-box">
+            <button id="mute-btn">🔊</button>
+        </div>
+
+    </div>
+
+    <!-- ✅ TARGET WORD BAR -->
+    <div id="target-word-bar">
+
+        <div id="target-label">
+            Find the definition for:
+        </div>
+
+        <div id="target-word">
+            PRESS START
+        </div>
+
+    </div>
+
 </div>
 
-</div>
+<!-- =========================================
+     LOAD VOCAB FROM URL (FIRST)
+========================================= -->
 
-<div id="target-word-bar">
-<div id="target-label">Find the definition for:</div>
-<div id="target-word">PRESS START</div>
-</div>
-
-</div>
-
-<!-- LOAD URL VOCAB FIRST -->
 <script>
+
 function loadVocabFromURL() {
+
     const params = new URLSearchParams(window.location.search);
 
     if (!params.has("vocab")) return;
@@ -63,15 +106,29 @@ function loadVocabFromURL() {
     const raw = decodeURIComponent(params.get("vocab"));
 
     const vocabListFromURL = raw.split(";").map(item => {
+
         const parts = item.split("|");
-        return { word: parts[0], definition: parts[1] };
+
+        return {
+            word: parts[0],
+            definition: parts[1]
+        };
     });
 
+    // ✅ hide teacher panel
     document.getElementById("teacher-panel").style.display = "none";
+
+    // ✅ pass into game
     window.preloadedVocab = vocabListFromURL;
 }
+
 loadVocabFromURL();
+
 </script>
+
+<!-- =========================================
+     GAME SCRIPT (AFTER VOCAB LOAD)
+========================================= -->
 
 <script src="script.js"></script>
 

@@ -1,0 +1,31 @@
+/* =========================================
+   GLOBAL RESET
+========================================= */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* =========================================
+   BODY
+========================================= */
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(to bottom, #9ad9ff, #e6f7ff);
+    height: 100vh;
+    display: flex;
+    overflow: hidden;
+    color: #2b3a42;
+}
+
+/* =========================================
+   TEACHER PANEL (index.html)
+========================================= */
+#teacher-panel {
+    width: 320px;
+    background: rgba(255, 255, 255, 0.96);
+    border-right: 4px solid #cde7f5;
+    padding: 20px;
+    overflow-y: auto;
+    box-shadow: 4

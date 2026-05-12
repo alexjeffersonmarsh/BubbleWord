@@ -13,6 +13,7 @@ function resizeCanvas() {
     canvas.width = window.innerWidth - panelWidth;
     canvas.height = window.innerHeight;
 }
+
 resizeCanvas();
 window.addEventListener("resize", resizeCanvas);
 
@@ -22,7 +23,7 @@ window.addEventListener("resize", resizeCanvas);
 
 let score = 0;
 let level = 1;
-let maxLevels = 10;
+const maxLevels = 10;
 
 let timeLeft = 60;
 let timerInterval = null;
@@ -70,18 +71,19 @@ function startTimer() {
 }
 
 // =========================================
-// PARSE VOCAB
+// PARSE VOCAB (fallback)
 // =========================================
 
 function getVocabularyList() {
 
-    return document.getElementById("bulk-vocab-input").value
-        .split("\n")
-        .map(x => x.split(","))
-        .filter(x => x.length > 1)
-        .map(x => ({
-            word: x[0].trim(),
-            definition: x.slice(1).join(",").trim()
+    const input = document.getElementById("bulk-vocab-input").value;
+
+    return input.split("\n")
+        .map(line => line.split(","))
+        .filter(parts => parts.length > 1)
+        .map(parts => ({
+            word: parts[0].trim(),
+            definition: parts.slice(1).join(",").trim()
         }));
 }
 
@@ -112,17 +114,17 @@ class Bubble {
             this.x += this.vx;
             this.y += this.vy;
 
-            // Add vertical movement from level 3+
+            // gentle wave (level 3+)
             if (level >= 3) {
                 this.y += Math.sin(Date.now() / 300 + this.x) * 0.5;
             }
 
-            // Level 5+: vertical drift
+            // vertical randomness (level 5+)
             if (level >= 5) {
-                this.vy = (Math.random() - 0.5) * 0.5;
+                this.vy += (Math.random() - 0.5) * 0.2;
             }
 
-            // Boundary bounce
+            // bounce walls
             if (this.x < this.radius || this.x > canvas.width - this.radius) {
                 this.vx *= -1;
             }
@@ -135,10 +137,11 @@ class Bubble {
 
     draw() {
 
-        // POP EFFECT
+        // POP ANIMATION
         if (this.popping) {
             this.popFrame++;
             this.radius += 2;
+
             ctx.globalAlpha = 1 - this.popFrame / 10;
 
             if (this.popFrame > 10) {
@@ -147,7 +150,6 @@ class Bubble {
             }
         }
 
-        // Bubble gradient
         let g = ctx.createRadialGradient(
             this.x - this.radius * 0.3,
             this.y - this.radius * 0.3,
@@ -198,15 +200,18 @@ class Bubble {
 
 function wrapText(text, x, y, maxWidth, lineHeight) {
 
-    let words = text.split(" ");
-    let lines = [];
+    const words = text.split(" ");
     let line = "";
+    let lines = [];
 
-    for (let w of words) {
-        let test = line + w + " ";
-        if (ctx.measureText(test).width > maxWidth) {
+    for (let i = 0; i < words.length; i++) {
+
+        let test = line + words[i] + " ";
+        let width = ctx.measureText(test).width;
+
+        if (width > maxWidth && i > 0) {
             lines.push(line);
-            line = w + " ";
+            line = words[i] + " ";
         } else {
             line = test;
         }
@@ -214,7 +219,7 @@ function wrapText(text, x, y, maxWidth, lineHeight) {
 
     lines.push(line);
 
-    let startY = y - (lines.length * lineHeight) / 2;
+    let startY = y - ((lines.length - 1) * lineHeight) / 2;
 
     lines.forEach((l, i) => {
         ctx.fillText(l, x, startY + i * lineHeight);
@@ -261,11 +266,13 @@ function createLevel() {
             safe = true;
 
             for (let b of bubbles) {
+
                 let dx = x - b.x;
                 let dy = y - b.y;
-                let d = Math.sqrt(dx * dx + dy * dy);
 
-                if (d < radius * 2.6) safe = false;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+
+                if (dist < radius * 2.6) safe = false;
             }
         }
 
@@ -285,7 +292,7 @@ function createLevel() {
 }
 
 // =========================================
-// DRAW LOOP
+// DRAW GAME
 // =========================================
 
 function drawGame() {
@@ -297,7 +304,7 @@ function drawGame() {
         b.draw();
     });
 
-    // flash overlay
+    // FLASH EFFECT
     if (flashColor) {
 
         ctx.fillStyle = flashColor;
@@ -319,13 +326,13 @@ function drawGame() {
 // CLICK HANDLER
 // =========================================
 
-canvas.addEventListener("click", e => {
+canvas.addEventListener("click", (event) => {
 
     if (gameOver) return;
 
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
+    const mx = event.clientX - rect.left;
+    const my = event.clientY - rect.top;
 
     for (let bubble of bubbles) {
 
@@ -334,6 +341,7 @@ canvas.addEventListener("click", e => {
 
         if (Math.sqrt(dx * dx + dy * dy) < bubble.radius) {
 
+            // ✅ CORRECT
             if (bubble.correct) {
 
                 score += 100;
@@ -376,7 +384,10 @@ canvas.addEventListener("click", e => {
 
                 }, 120);
 
-            } else {
+            }
+
+            // ❌ INCORRECT
+            else {
 
                 score = Math.max(0, score - 25);
                 scoreDisplay.textContent = score;
@@ -426,7 +437,7 @@ function endGame(message) {
 document.getElementById("start-game-btn")
 .addEventListener("click", () => {
 
-    vocabList = getVocabularyList();
+    vocabList = window.preloadedVocab || getVocabularyList();
 
     if (vocabList.length < 10) {
         alert("Enter at least 10 words.");
@@ -444,12 +455,31 @@ document.getElementById("start-game-btn")
 });
 
 // =========================================
-// LOOP
+// AUTO-START IF LINK USED
 // =========================================
 
-function loop() {
-    drawGame();
-    requestAnimationFrame(loop);
+if (window.preloadedVocab) {
+
+    vocabList = window.preloadedVocab;
+
+    score = 0;
+    level = 1;
+    gameOver = false;
+
+    scoreDisplay.textContent = score;
+    levelDisplay.textContent = level;
+
+    createLevel();
 }
 
-loop();
+// =========================================
+// GAME LOOP
+// =========================================
+
+function gameLoop() {
+    drawGame();
+    requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+``

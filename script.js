@@ -506,4 +506,22 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
+// =========================================
+// AUTO START FROM SHARED LINK (REQUIRED)
+// =========================================
+
+if (window.preloadedVocab && window.preloadedVocab.length > 0) {
+
+    vocabList = window.preloadedVocab;
+
+    score = 0;
+    level = 1;
+    gameOver = false;
+
+    scoreDisplay.textContent = score;
+    levelDisplay.textContent = level;
+
+    createLevel();
+}
+
 gameLoop();

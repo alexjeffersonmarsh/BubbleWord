@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
 <title>BubbleWord</title>
 
-<!-- ✅ CSS -->
+<!-- CSS -->
 <link rel="stylesheet" href="styles.css">
+
 </head>
 
 <body>
@@ -19,22 +25,29 @@
 
     <h2>BubbleWord</h2>
 
-    <p>Enter one vocabulary word and definition per line.</p>
+    <p>
+        Load a vocabulary list from the online repository.
+    </p>
 
-    <textarea id="bulk-vocab-input">
-amicus, friend
-aqua, water
-arbor, tree
-bellum, war
-caelum, sky
-canis, dog
-caput, head
-corpus, body
-dies, day
-dominus, master/lord
-    </textarea>
+    <input
+        type="text"
+        id="vocab-url"
+        placeholder="Paste JSON vocabulary URL here"
+    >
 
-    <button id="start-game-btn">Start Game</button>
+    <p style="font-size:13px;color:#666;margin-top:10px;">
+
+        Example:
+
+        <br><br>
+
+        https://alexjeffersonmarsh.github.io/bubble-vocab-lists/sat-unit-1.json
+
+    </p>
+
+    <button id="start-game-btn">
+        Start Game
+    </button>
 
 </div>
 
@@ -46,28 +59,34 @@ dominus, master/lord
 
     <canvas id="gameCanvas"></canvas>
 
-    <!-- ✅ LEFT HUD -->
+    <!-- LEFT HUD -->
+
     <div id="hud-left">
 
         <div class="hud-box">
-            Score: <span id="score">0</span>
+            Score:
+            <span id="score">0</span>
         </div>
 
         <div class="hud-box">
-            Level: <span id="level">1</span>
+            Level:
+            <span id="level">1</span>
         </div>
 
     </div>
 
-    <!-- ✅ RIGHT HUD -->
+    <!-- RIGHT HUD -->
+
     <div id="hud-right">
 
         <div class="hud-box">
-            Time: <span id="timer">60</span>
+            Time:
+            <span id="timer">60</span>
         </div>
 
         <div class="hud-box">
-            Shots Left: <span id="attempts">20</span>
+            Shots Left:
+            <span id="attempts">20</span>
         </div>
 
         <div class="hud-box">
@@ -76,7 +95,8 @@ dominus, master/lord
 
     </div>
 
-    <!-- ✅ TARGET WORD BAR -->
+    <!-- TARGET WORD -->
+
     <div id="target-word-bar">
 
         <div id="target-label">
@@ -92,42 +112,149 @@ dominus, master/lord
 </div>
 
 <!-- =========================================
-     LOAD VOCAB FROM URL (FIRST)
+     VOCABULARY LOADER
 ========================================= -->
 
 <script>
 
-function loadVocabFromURL() {
+// =========================================
+// GLOBAL PRELOADED VOCAB
+// =========================================
 
-    const params = new URLSearchParams(window.location.search);
+window.preloadedVocab = null;
 
-    if (!params.has("vocab")) return;
+// =========================================
+// LOAD VOCABULARY FROM JSON URL
+// =========================================
 
-    const raw = decodeURIComponent(params.get("vocab"));
+async function loadVocabularyFromURL() {
 
-    const vocabListFromURL = raw.split(";").map(item => {
+    const params =
+        new URLSearchParams(window.location.search);
 
-        const parts = item.split("|");
+    const vocabURL =
+        params.get("vocab");
 
-        return {
-            word: parts[0],
-            definition: parts[1]
-        };
-    });
+    // No vocab parameter
 
-    // ✅ hide teacher panel
-    document.getElementById("teacher-panel").style.display = "none";
+    if (!vocabURL) {
 
-    // ✅ pass into game
-    window.preloadedVocab = vocabListFromURL;
+        return;
+
+    }
+
+    try {
+
+        const response =
+            await fetch(vocabURL);
+
+        const data =
+            await response.json();
+
+        // Save globally
+
+        window.preloadedVocab = data;
+
+        // Hide teacher panel
+
+        document.getElementById(
+            "teacher-panel"
+        ).style.display = "none";
+
+        console.log(
+            "Vocabulary loaded:",
+            data
+        );
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+        alert(
+            "Could not load vocabulary list."
+        );
+
+    }
+
 }
 
-loadVocabFromURL();
+// =========================================
+// MANUAL URL LOADER
+// =========================================
+
+async function loadVocabularyManually() {
+
+    const url =
+        document
+        .getElementById("vocab-url")
+        .value
+        .trim();
+
+    if (!url) {
+
+        alert(
+            "Please enter a vocabulary URL."
+        );
+
+        return;
+
+    }
+
+    try {
+
+        const response =
+            await fetch(url);
+
+        const data =
+            await response.json();
+
+        window.preloadedVocab = data;
+
+        // Start game
+
+        if (window.startLoadedGame) {
+
+            window.startLoadedGame();
+
+        }
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+        alert(
+            "Could not load vocabulary list."
+        );
+
+    }
+
+}
+
+// =========================================
+// BUTTON EVENT
+// =========================================
+
+document
+    .getElementById("start-game-btn")
+    .addEventListener(
+        "click",
+        loadVocabularyManually
+    );
+
+// =========================================
+// AUTO LOAD URL PARAMETER
+// =========================================
+
+loadVocabularyFromURL();
 
 </script>
 
 <!-- =========================================
-     GAME SCRIPT (AFTER VOCAB LOAD)
+     GAME SCRIPT
 ========================================= -->
 
 <script src="script.js"></script>

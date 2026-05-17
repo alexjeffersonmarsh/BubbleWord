@@ -256,7 +256,122 @@ loadVocabularyFromURL();
 <!-- =========================================
      GAME SCRIPT
 ========================================= -->
+<script type="module">
 
+import { initializeApp }
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+
+    getFirestore,
+
+    collection,
+
+    getDocs
+
+}
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// =========================================
+// FIREBASE CONFIG
+// =========================================
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
+    authDomain: "bubbleword-30367.firebaseapp.com",
+    projectId: "bubbleword-30367",
+    storageBucket: "bubbleword-30367.firebasestorage.app",
+    messagingSenderId: "1058393039019",
+    appId: "1:1058393039019:web:72ffaf6dab677b9a3657ee"
+  };
+
+// =========================================
+// INITIALIZE FIREBASE
+// =========================================
+
+const app =
+    initializeApp(firebaseConfig);
+
+const db =
+    getFirestore(app);
+
+// =========================================
+// LOAD VOCAB SET
+// =========================================
+
+async function loadSet(setId) {
+
+    const termsRef =
+
+        collection(
+            db,
+            "vocabSets",
+            setId,
+            "terms"
+        );
+
+    const snapshot =
+        await getDocs(termsRef);
+
+    const vocab = [];
+
+    snapshot.forEach(doc => {
+
+        vocab.push(doc.data());
+
+    });
+
+    return vocab;
+
+}
+
+// =========================================
+// LOAD FROM URL
+// =========================================
+
+const params =
+
+    new URLSearchParams(
+        window.location.search
+    );
+
+const setId =
+    params.get("set");
+
+// Example:
+// index.html?set=sat-unit-1
+
+if (setId) {
+
+    loadSet(setId)
+
+        .then(vocab => {
+
+            window.preloadedVocab = vocab;
+
+            if (window.startLoadedGame) {
+
+                window.startLoadedGame();
+
+            }
+
+        })
+
+        .catch(error => {
+
+            console.error(error);
+
+            alert(
+                "Could not load Firebase vocabulary set."
+            );
+
+        });
+
+}
+
+</script>
 <script src="script.js"></script>
 
 </body>

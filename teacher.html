@@ -8,37 +8,24 @@
     <link rel="stylesheet" href="styles.css">
 
     <style>
-
         body {
             display: flex;
             justify-content: center;
             align-items: flex-start;
-
             padding: 20px;
-
             background: linear-gradient(to bottom, #9ad9ff, #e6f7ff);
-
             font-family: Arial, Helvetica, sans-serif;
         }
 
         #teacher-box {
-
             width: 700px;
-
             background: white;
-
             padding: 25px;
-
             border-radius: 16px;
-
             box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-
         }
 
-        h2 {
-            margin-bottom: 10px;
-            color: #1d3d57;
-        }
+        h2 { margin-bottom: 10px; color: #1d3d57; }
 
         p {
             color: #4d6477;
@@ -46,142 +33,43 @@
             line-height: 1.5;
         }
 
-        textarea,
-        input {
-
+        textarea, input {
             width: 100%;
-
             padding: 12px;
-
             border-radius: 10px;
-
             border: 2px solid #b8d7e8;
-
             font-size: 14px;
-
             margin-bottom: 12px;
-
         }
 
         textarea {
-
             height: 320px;
-
             resize: none;
-
             line-height: 1.6;
-
-        }
-
-        textarea:focus,
-        input:focus {
-
-            outline: none;
-
-            border-color: #4db8ff;
-
         }
 
         button {
-
             width: 100%;
-
             padding: 12px;
-
             border: none;
-
             border-radius: 10px;
-
             background: linear-gradient(to bottom, #58d88f, #34bc6e);
-
             color: white;
-
             font-weight: bold;
-
             cursor: pointer;
-
             margin-top: 10px;
-
-            transition: 0.2s;
-
         }
 
         button:hover {
-
             transform: translateY(-2px);
-
-            background: linear-gradient(to bottom, #69e59d, #2cab63);
-
-        }
-
-        #copy-btn {
-
-            background: linear-gradient(to bottom, #5ec8ff, #37aff2);
-
-        }
-
-        #copy-btn:hover {
-
-            background: linear-gradient(to bottom, #74d1ff, #2ca4e9);
-
         }
 
         #saved-sets div {
-
             margin-top: 10px;
-
             padding: 12px;
-
             background: #f1faff;
-
             border-radius: 10px;
-
         }
-
-        #link-output {
-
-            margin-top: 20px;
-
-            padding: 15px;
-
-            background: #f8fcff;
-
-            border-radius: 12px;
-
-            border: 2px solid #d8ecf7;
-
-            word-break: break-word;
-
-        }
-
-        #link-output a {
-
-            color: #1c6aa3;
-
-            text-decoration: none;
-
-            font-weight: bold;
-
-        }
-
-        #link-output a:hover {
-
-            text-decoration: underline;
-
-        }
-
-        .small-note {
-
-            font-size: 13px;
-
-            color: #6b7f8f;
-
-            margin-top: -5px;
-
-            margin-bottom: 15px;
-
-        }
-
     </style>
 </head>
 
@@ -189,26 +77,11 @@
 
 <div id="teacher-box">
 
-    <h2>Create Your BubbleWord Game</h2>
+    <h2>BubbleWord Teacher CMS</h2>
 
-    <p>
-        Enter one vocabulary word and definition per line.
-        <br><br>
+    <p>Paste vocabulary in format: <b>word, definition</b></p>
 
-        Format:
-        <strong>
-            amicus, friend
-        </strong>
-    </p>
-
-    <input
-        id="set-name"
-        placeholder="Enter set name (example: latin-unit-1)"
-    >
-
-    <div class="small-note">
-        Use lowercase with hyphens for best URL compatibility.
-    </div>
+    <input id="set-name" placeholder="Enter set name (e.g. sat-unit-1)">
 
     <textarea id="teacher-input">
 amicus, friend
@@ -221,372 +94,90 @@ caput, head
 corpus, body
 dies, day
 dominus, master/lord
-equus, horse
-femina, woman
-filius, son
-flumen, river
-frater, brother
-gladius, sword
-homo, man/human
-ignis, fire
-insula, island
-luna, moon
     </textarea>
 
-    <button onclick="generateJSON()">
-        Generate Vocabulary JSON
-    </button>
+    <button onclick="createVocabSet()">SAVE TO FIREBASE</button>
 
-    <div id="link-output"></div>
-
-    <div id="qr-output"
-         style="text-align:center; margin-top:15px;">
-    </div>
-
-    <button
-        id="copy-btn"
-        style="display:none;"
-        onclick="copyJSON()"
-    >
-        Copy JSON
-    </button>
-
-    <h3 style="margin-top:25px;">
-        Saved Sets
-    </h3>
-
+    <h3 style="margin-top:25px;">Saved Sets (Local Cache)</h3>
     <div id="saved-sets"></div>
 
 </div>
 
-<script>
+<!-- =========================================
+     FIREBASE AUTO CMS
+========================================= -->
 
-let generatedJSON = "";
-let generatedGameLink = "";
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    getFirestore,
+    doc,
+    setDoc,
+    collection,
+    addDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* 🔴 YOUR FIREBASE CONFIG */
+const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 // =========================================
-// GENERATE JSON
+// CREATE SET (AUTO FIREBASE STRUCTURE)
 // =========================================
 
-function generateJSON() {
+window.createVocabSet = async function () {
 
-    const name =
-        document
-        .getElementById("set-name")
-        .value
-        .trim();
-
-    const input =
-        document
-        .getElementById("teacher-input")
-        .value;
+    const name = document.getElementById("set-name").value.trim();
+    const input = document.getElementById("teacher-input").value;
 
     if (!name) {
-
-        alert(
-            "Please enter a set name."
-        );
-
+        alert("Enter a set name.");
         return;
-
     }
 
-    const lines =
-        input.split("\n");
+    const setId = name.toLowerCase().replace(/\s+/g, "-");
 
-    const vocab = [];
+    const lines = input
+        .split("\n")
+        .map(l => l.trim())
+        .filter(l => l.includes(","));
 
-    lines.forEach((line) => {
+    if (lines.length < 5) {
+        alert("Add at least 5 vocab entries.");
+        return;
+    }
 
-        if (line.trim() === "") return;
+    // 1. Create parent set document
+    await setDoc(doc(db, "vocabSets", setId), {
+        title: name,
+        created: new Date().toISOString()
+    });
 
-        const parts =
-            line.split(",");
+    // 2. Add terms subcollection
+    const termsRef = collection(db, "vocabSets", setId, "terms");
 
-        if (parts.length < 2) return;
+    for (let line of lines) {
 
-        const word =
-            parts[0].trim();
+        const parts = line.split(",");
 
-        const definition =
-            parts
-            .slice(1)
-            .join(",")
-            .trim();
-
-        vocab.push({
-
-            word: word,
-            definition: definition
-
+        await addDoc(termsRef, {
+            word: parts[0].trim(),
+            definition: parts.slice(1).join(",").trim()
         });
-
-    });
-
-    if (vocab.length < 10) {
-
-        alert(
-            "Please enter at least 10 vocabulary words."
-        );
-
-        return;
-
     }
 
-    // Create JSON
-
-    generatedJSON =
-        JSON.stringify(vocab, null, 2);
-
-    // Example repository URL
-
-    const repositoryURL =
-        "https://alexjeffersonmarsh.github.io/bubble-vocab-lists/";
-
-    const jsonFileName =
-        name + ".json";
-
-    const jsonURL =
-        repositoryURL + jsonFileName;
-
-    // Example game link
-
-    generatedGameLink =
-        window.location.origin +
-        window.location.pathname
-            .replace("teacher.html", "index.html") +
-        "?vocab=" +
-        encodeURIComponent(jsonURL);
-
-    document.getElementById("link-output").innerHTML =
-
-        "<strong>STEP 1:</strong><br>" +
-
-        "Copy the JSON below and save it as:<br><br>" +
-
-        "<strong>" + jsonFileName + "</strong><br><br>" +
-
-        "Then upload it to your GitHub repository.<br><br>" +
-
-        "<textarea style='height:240px;'>" +
-        generatedJSON +
-        "</textarea><br><br>" +
-
-        "<strong>STEP 2:</strong><br>" +
-
-        "Your final JSON URL will be:<br><br>" +
-
-        "<a href='" + jsonURL + "' target='_blank'>" +
-        jsonURL +
-        "</a><br><br>" +
-
-        "<strong>STEP 3:</strong><br>" +
-
-        "Students will use this game link:<br><br>" +
-
-        "<a href='" + generatedGameLink + "' target='_blank'>" +
-        generatedGameLink +
-        "</a>";
-
-    document.getElementById("copy-btn").style.display = "block";
-
-    // QR CODE
-
-    const qrURL =
-
-        "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" +
-
-        encodeURIComponent(generatedGameLink);
-
-    document.getElementById("qr-output").innerHTML =
-
-        "<p><strong>Student QR Code:</strong></p>" +
-
-        "<img src='" + qrURL + "'>";
-
-    saveSet(
-        name,
-        generatedGameLink,
-        input
-    );
-
-}
-
-// =========================================
-// COPY JSON
-// =========================================
-
-function copyJSON() {
-
-    navigator.clipboard.writeText(
-        generatedJSON
-    );
-
-    const btn =
-        document.getElementById("copy-btn");
-
-    btn.textContent = "Copied JSON! ✅";
-
-    setTimeout(() => {
-
-        btn.textContent = "Copy JSON";
-
-    }, 1500);
-
-}
-
-// =========================================
-// SAVE SETS
-// =========================================
-
-function saveSet(name, link, vocab) {
-
-    let sets =
-
-        JSON.parse(
-            localStorage.getItem("bubbleword_sets")
-        ) || [];
-
-    sets =
-        sets.filter(s => s.name !== name);
-
-    sets.unshift({
-
-        name,
-        link,
-        vocab,
-
-        date:
-            new Date().toLocaleDateString()
-
-    });
-
-    localStorage.setItem(
-
-        "bubbleword_sets",
-
-        JSON.stringify(sets)
-
-    );
-
-    displaySavedSets();
-
-}
-
-// =========================================
-// DISPLAY SAVED SETS
-// =========================================
-
-function displaySavedSets() {
-
-    const container =
-        document.getElementById("saved-sets");
-
-    let sets =
-
-        JSON.parse(
-            localStorage.getItem("bubbleword_sets")
-        ) || [];
-
-    if (sets.length === 0) {
-
-        container.innerHTML =
-            "<p>No saved sets yet.</p>";
-
-        return;
-
-    }
-
-    container.innerHTML =
-
-        sets.map((set, i) => `
-
-        <div>
-
-            <strong>${set.name}</strong>
-            (${set.date})
-
-            <br><br>
-
-            <a href="${set.link}" target="_blank">
-                Open Game
-            </a>
-
-            |
-
-            <span
-                onclick="loadSet(${i})"
-                style="cursor:pointer;color:#1c6aa3;"
-            >
-                Edit
-            </span>
-
-            |
-
-            <span
-                onclick="deleteSet(${i})"
-                style="cursor:pointer;color:red;"
-            >
-                Delete
-            </span>
-
-        </div>
-
-        `).join("");
-
-}
-
-// =========================================
-// LOAD SET
-// =========================================
-
-function loadSet(i) {
-
-    const sets =
-
-        JSON.parse(
-            localStorage.getItem("bubbleword_sets")
-        ) || [];
-
-    document.getElementById("set-name").value =
-        sets[i].name;
-
-    document.getElementById("teacher-input").value =
-        sets[i].vocab;
-
-}
-
-// =========================================
-// DELETE SET
-// =========================================
-
-function deleteSet(i) {
-
-    let sets =
-
-        JSON.parse(
-            localStorage.getItem("bubbleword_sets")
-        ) || [];
-
-    sets.splice(i, 1);
-
-    localStorage.setItem(
-
-        "bubbleword_sets",
-
-        JSON.stringify(sets)
-
-    );
-
-    displaySavedSets();
-
-}
-
-// =========================================
-// INITIAL LOAD
-// =========================================
-
-displaySavedSets();
+    alert("✅ Saved to Firebase successfully!");
+};
 
 </script>
 

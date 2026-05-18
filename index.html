@@ -2,169 +2,71 @@
 <html lang="en">
 
 <head>
-
 <meta charset="UTF-8">
-
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>BubbleWord</title>
+<title>BubbleWord Teacher Setup</title>
 
 <link rel="stylesheet" href="styles.css">
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 </head>
 
 <body>
 
-<!-- =========================================
-     TEACHER PANEL
-========================================= -->
+<div id="teacher-box">
 
-<div id="teacher-panel">
+<h2>BubbleWord Teacher CMS</h2>
 
-    <h2>BubbleWord</h2>
+<p>Paste vocabulary in format: <b>word, meaning</b></p>
 
-    <p>Load a vocabulary list from the online repository.</p>
+<input id="set-name" placeholder="Set Title (e.g. Unit 1 Vocab)">
+<input id="content-area" placeholder="Content Area (Latin, Physics, etc.)">
 
-    <input
-        type="text"
-        id="vocab-url"
-        placeholder="Paste JSON vocabulary URL here"
-    >
+<!-- ✅ GAME SELECTION -->
+<h4>Select Game:</h4>
+<select id="game-select">
+    <option value="index.html">BubbleWord</option>
+    <option value="gemword.html">GemWord</option>
+    <option value="flashcards.html">Flashcards</option>
+</select>
 
-    <p style="font-size:13px;color:#666;margin-top:10px;">
-        Example:
-        <br><br>
-        https://alexjeffersonmarsh.github.io/bubble-vocab-lists/sat-unit-1.json
-    </p>
+<h4>Paste CSV:</h4>
+<textarea id="teacher-input">
+amicus, friend
+aqua, water
+arbor, tree
+bellum, war
+caelum, sky
+</textarea>
 
-    <button id="start-game-btn">Start Game</button>
+<h4>OR Upload CSV File:</h4>
+<input type="file" id="csvFile" accept=".csv">
 
-</div>
+<button class="secondary" onclick="previewVocab()">Preview Vocab</button>
 
-<!-- =========================================
-     GAME AREA
-========================================= -->
+<button onclick="createVocabSet()">Save Set</button>
 
-<div id="game-container">
+<!-- ✅ PREVIEW -->
+<div id="preview-box"></div>
 
-    <canvas id="gameCanvas"></canvas>
-
-    <!-- LEFT HUD -->
-    <div id="hud-left">
-        <div class="hud-box">
-            Score: <span id="score">0</span>
-        </div>
-        <div class="hud-box">
-            Level: <span id="level">1</span>
-        </div>
-    </div>
-
-    <!-- RIGHT HUD -->
-    <div id="hud-right">
-        <div class="hud-box">
-            Time: <span id="timer">60</span>
-        </div>
-        <div class="hud-box">
-            Shots Left: <span id="attempts">20</span>
-        </div>
-        <div class="hud-box">
-            <button id="mute-btn">🔊</button>
-        </div>
-    </div>
-
-    <!-- TARGET WORD -->
-    <div id="target-word-bar">
-        <div id="target-label">Find the definition for:</div>
-        <div id="target-word">PRESS START</div>
-    </div>
+<!-- ✅ RESULT -->
+<div id="result"></div>
+<canvas id="qrCanvas"></canvas>
 
 </div>
 
 <!-- =========================================
-     VOCABULARY LOADER (JSON URL SUPPORT)
-========================================= -->
-
-<script>
-
-// Global
-window.preloadedVocab = null;
-
-// Load via ?vocab=URL
-async function loadVocabularyFromURL() {
-
-    const params = new URLSearchParams(window.location.search);
-    const vocabURL = params.get("vocab");
-
-    if (!vocabURL) return;
-
-    try {
-        const response = await fetch(vocabURL);
-        const data = await response.json();
-
-        window.preloadedVocab = data;
-
-        document.getElementById("teacher-panel").style.display = "none";
-
-        if (window.startLoadedGame) {
-            window.startLoadedGame();
-        }
-
-    } catch (error) {
-        console.error(error);
-        alert("Could not load vocabulary list.");
-    }
-}
-
-// Manual input loader
-async function loadVocabularyManually() {
-
-    const url = document.getElementById("vocab-url").value.trim();
-
-    if (!url) {
-        alert("Please enter a vocabulary URL.");
-        return;
-    }
-
-    try {
-        const response = await fetch(url);
-        const data = await response.json();
-
-        window.preloadedVocab = data;
-
-        if (window.startLoadedGame) {
-            window.startLoadedGame();
-        }
-
-    } catch (error) {
-        console.error(error);
-        alert("Could not load vocabulary list.");
-    }
-}
-
-document
-    .getElementById("start-game-btn")
-    .addEventListener("click", loadVocabularyManually);
-
-// Auto-load JSON URL
-loadVocabularyFromURL();
-
-</script>
-
-<!-- =========================================
-     FIREBASE LOADER (UPDATED STRUCTURE)
+     FIREBASE CMS
 ========================================= -->
 
 <script type="module">
 
-import { initializeApp }
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
     getFirestore,
     doc,
-    getDoc
-}
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // ✅ YOUR CONFIG
 const firebaseConfig = {
@@ -179,33 +81,147 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Load a set from Firebase
-async function loadSet(setId) {
+// =========================================
+// HELPERS
+// =========================================
 
-    const ref = doc(db, "vocabSets", setId);
-    const snapshot = await getDoc(ref);
-
-    if (!snapshot.exists()) {
-        throw new Error("Set not found");
-    }
-
-    const data = snapshot.data();
-
-    return data.terms; // ✅ NEW STRUCTURE
+function generateID() {
+    return Math.random().toString(36).substring(2, 10);
 }
 
-// Read URL parameters
-const params = new URLSearchParams(window.location.search);
+function parseCSV(text) {
+    const lines = text
+        .split("\n")
+        .map(l => l.trim())
+        .filter(l => l.includes(","));
 
-// ✅ Supports BOTH:
-// index.html?id=abc123 (NEW)
-// index.html?set=abc123 (OLD)
-const setId = params.get("id") || params.get("set");
+    return lines.map(line => {
+        const parts = line.split(",");
+        return {
+            word: parts[0].trim(),
+            meaning: parts.slice(1).join(",").trim()
+        };
+    });
+}
 
-if (setId) {
+function readCSVFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = err => reject(err);
+        reader.readAsText(file);
+    });
+}
 
-    loadSet(setId)
-        .then(vocab => {
+// =========================================
+// PREVIEW
+// =========================================
 
-            window.preloadedVocab = vocab;
+window.previewVocab = async function () {
 
+    const pasteText = document.getElementById("teacher-input").value;
+    const file = document.getElementById("csvFile").files[0];
+
+    let rawText = file ? await readCSVFile(file) : pasteText;
+
+    if (!rawText.trim()) {
+        alert("Paste or upload vocab first.");
+        return;
+    }
+
+    const terms = parseCSV(rawText);
+
+    let html = `
+        <h4>Preview (${terms.length} items)</h4>
+        <table>
+            <tr>
+                <th>Word</th>
+                <th>Meaning</th>
+            </tr>
+    `;
+
+    terms.forEach(t => {
+        html += `
+            <tr>
+                <td>${t.word}</td>
+                <td>${t.meaning}</td>
+            </tr>
+        `;
+    });
+
+    html += `</table>`;
+
+    document.getElementById("preview-box").innerHTML = html;
+};
+
+// =========================================
+// SAVE
+// =========================================
+
+window.createVocabSet = async function () {
+
+    const title = document.getElementById("set-name").value.trim();
+    const contentArea = document.getElementById("content-area").value.trim();
+    const pasteText = document.getElementById("teacher-input").value;
+    const file = document.getElementById("csvFile").files[0];
+
+    if (!title) {
+        alert("Enter a set title.");
+        return;
+    }
+
+    let rawText = file ? await readCSVFile(file) : pasteText;
+
+    if (!rawText.trim()) {
+        alert("Paste or upload vocabulary.");
+        return;
+    }
+
+    const terms = parseCSV(rawText);
+
+    if (terms.length < 5) {
+        alert("Please include at least 5 vocab items.");
+        return;
+    }
+
+    const id = generateID();
+
+    await setDoc(doc(db, "vocabSets", id), {
+        title,
+        contentArea,
+        createdAt: Date.now(),
+        terms
+    });
+
+    // ✅ GAME SELECTION LINK
+    const selectedGame = document.getElementById("game-select").value;
+    const link = `${window.location.origin}/${selectedGame}?id=${id}`;
+
+    document.getElementById("result").innerHTML = `
+        ✅ Saved!<br><br>
+        <strong>Game:</strong> ${selectedGame}<br><br>
+        <input id="shareLink" value="${link}" readonly>
+        <button onclick="copyLink()">Copy Link</button>
+        <br><br>
+        <strong>Scan QR Code:</strong>
+    `;
+
+    // ✅ QR CODE
+    QRCode.toCanvas(document.getElementById("qrCanvas"), link);
+};
+
+// =========================================
+// COPY LINK
+// =========================================
+
+window.copyLink = function () {
+    const input = document.getElementById("shareLink");
+    input.select();
+    navigator.clipboard.writeText(input.value);
+    alert("✅ Link copied!");
+};
+
+</script>
+
+</body>
+</html>

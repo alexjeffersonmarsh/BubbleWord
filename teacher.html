@@ -8,14 +8,28 @@
 <!-- ✅ FIXED CSS -->
 <link rel="stylesheet" href="styles.css">
 
-<!-- ✅ FIXED QR LIBRARY -->
+<!-- ✅ QR CODE LIB -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<!-- ✅ PAGE-SPECIFIC FIXES -->
+<style>
+body {
+    overflow: auto !important;
+    justify-content: center !important;
+}
+
+/* center the panel for teacher page */
+#teacher-panel {
+    margin-top: 30px;
+}
+</style>
 
 </head>
 
 <body>
 
-<div id="teacher-box">
+<!-- ✅ USE SAME ID AS CSS -->
+<div id="teacher-panel">
 
 <h2>BubbleWord Teacher CMS</h2>
 
@@ -24,7 +38,6 @@
 <input id="set-name" placeholder="Set Title (e.g. Unit 1 Vocab)">
 <input id="content-area" placeholder="Content Area (Latin, Physics, etc.)">
 
-<!-- ✅ GAME SELECT -->
 <h4>Select Game:</h4>
 <select id="game-select">
     <option value="index.html">BubbleWord</option>
@@ -45,14 +58,10 @@ caelum, sky
 <input type="file" id="csvFile" accept=".csv">
 
 <button class="secondary" onclick="previewVocab()">Preview Vocab</button>
-
-<!-- ✅ BUTTON UPDATED -->
 <button onclick="createVocabSet()">Save</button>
 
-<!-- ✅ PREVIEW -->
 <div id="preview-box"></div>
 
-<!-- ✅ RESULT -->
 <div id="result"></div>
 <canvas id="qrCanvas"></canvas>
 
@@ -71,7 +80,6 @@ import {
     setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// ✅ YOUR CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
   authDomain: "bubbleword-30367.firebaseapp.com",
@@ -93,25 +101,24 @@ function generateID() {
 }
 
 function parseCSV(text) {
-    const lines = text
+    return text
         .split("\n")
         .map(l => l.trim())
-        .filter(l => l.includes(","));
-
-    return lines.map(line => {
-        const parts = line.split(",");
-        return {
-            word: parts[0].trim(),
-            meaning: parts.slice(1).join(",").trim()
-        };
-    });
+        .filter(l => l.includes(","))
+        .map(line => {
+            const parts = line.split(",");
+            return {
+                word: parts[0].trim(),
+                meaning: parts.slice(1).join(",").trim()
+            };
+        });
 }
 
 function readCSVFile(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = e => resolve(e.target.result);
-        reader.onerror = err => reject(err);
+        reader.onerror = reject;
         reader.readAsText(file);
     });
 }
@@ -139,76 +146,3 @@ window.previewVocab = async function () {
         <table>
             <tr>
                 <th>Word</th>
-                <th>Meaning</th>
-            </tr>
-    `;
-
-    terms.forEach(t => {
-        html += `
-            <tr>
-                <td>${t.word}</td>
-                <td>${t.meaning}</td>
-            </tr>
-        `;
-    });
-
-    html += `</table>`;
-
-    document.getElementById("preview-box").innerHTML = html;
-};
-
-// =========================================
-// SAVE
-// =========================================
-
-window.createVocabSet = async function () {
-
-    const title = document.getElementById("set-name").value.trim();
-    const contentArea = document.getElementById("content-area").value.trim();
-    const pasteText = document.getElementById("teacher-input").value;
-    const file = document.getElementById("csvFile").files[0];
-
-    if (!title) {
-        alert("Enter a set title.");
-        return;
-    }
-
-    let rawText = file ? await readCSVFile(file) : pasteText;
-
-    if (!rawText.trim()) {
-        alert("Paste or upload vocabulary.");
-        return;
-    }
-
-    const terms = parseCSV(rawText);
-
-    if (terms.length < 5) {
-        alert("Please include at least 5 vocab items.");
-        return;
-    }
-
-    const id = generateID();
-
-    await setDoc(doc(db, "vocabSets", id), {
-        title,
-        contentArea,
-        createdAt: Date.now(),
-        terms
-    });
-
-    // ✅ GAME LINK
-    const selectedGame = document.getElementById("game-select").value;
-    const link = `${window.location.origin}/${selectedGame}?id=${id}`;
-
-    // ✅ ALWAYS SHOW RESULT (even if QR fails)
-    document.getElementById("result").innerHTML = `
-        ✅ Saved!<br><br>
-
-        <strong>Game:</strong> ${selectedGame}<br><br>
-
-        <input id="shareLink" value="${link}" readonly>
-
-        <button onclick="copyLink()">Copy Link</button>
-
-        <br><br>
-        <strong>Scan QR Code:</strong>

@@ -1,38 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-
 <meta charset="UTF-8">
-<title>Vocabulary Builder</title>
+<title>BubbleWord Teacher Setup</title>
 
-<link rel="stylesheet" hrefps://cdn.jsdelivr.net/npm/qrcode/build/qrcodept>
+<!-- ✅ CSS -->
+<link rel="stylesheet" href="styles.css">
 
+<!-- ✅ QR CODE LIB -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<!-- ✅ LAYOUT FIXES -->
 <style>
 body {
-    overflow: auto;
-    display: flex;
-    justify-content: center;
+    overflow: auto !important;
+    justify-content: center !important;
 }
 
+/* ✅ WIDER PANEL */
 #teacher-panel {
     width: 650px;
+    max-width: 95vw;
     margin-top: 20px;
 }
 
+/* ✅ SHORTER TEXT AREA */
 #teacher-input {
     height: 180px;
 }
 
-#preview-box table {
-    font-size: 13px;
-    border-collapse: collapse;
+/* ✅ TIGHT SPACING */
+#teacher-panel h2 {
+    margin-bottom: 8px;
 }
 
-#preview-box td, th {
-    border: 1px solid #ccc;
+#teacher-panel p {
+    margin-bottom: 10px;
+}
+
+/* ✅ COMPACT PREVIEW */
+#preview-box table {
+    font-size: 13px;
+}
+
+#preview-box td,
+#preview-box th {
     padding: 5px;
 }
 
+/* ✅ RESULT BOX */
 #result {
     margin-top: 15px;
     background: #f0f9ff;
@@ -47,48 +64,78 @@ body {
 
 <div id="teacher-panel">
 
-<h2>Vocabulary Builder</h2>
+<h2>BubbleWord Teacher CMS</h2>
 
-<input id="set-name" placeholder="Set Title">
+<p>Paste vocabulary in format: <b>word, meaning</b></p>
 
+<input id="set-name" placeholder="Set Title (e.g. Unit 1 Vocab)">
+<input id="content-area" placeholder="Content Area (Latin, Physics, etc.)">
+
+<h4>Select Game:</h4>
+<select id="game-select">
+    <option value="index.html">BubbleWord</option>
+    <option value="gemword.html">GemWord</option>
+    <option value="flashcards.html">Flashcards</option>
+</select>
+
+<h4>Paste CSV:</h4>
 <textarea id="teacher-input">
 amicus, friend
 aqua, water
 arbor, tree
+bellum, war
+caelum, sky
 </textarea>
 
-<button onclick="previewVocab()">Preview</button>
+<h4>OR Upload CSV File:</h4>
+<input type="file" id="csvFile" accept=".csv">
+
+<button class="secondary" onclick="previewVocab()">Preview Vocab</button>
 <button onclick="createVocabSet()">Save</button>
 
 <div id="preview-box"></div>
+
 <div id="result"></div>
 <canvas id="qrCanvas"></canvas>
 
 </div>
 
-<!-- ✅ ✅ FIREBASE NON-MODULE VERSION -->
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+<!-- =========================================
+     FIREBASE CMS
+========================================= -->
 
-<script>
+<script type="module">
 
-// ✅ INIT FIREBASE (older version = simpler)
-firebase.initializeApp({
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    getFirestore,
+    doc,
+    setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
   apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
   authDomain: "bubbleword-30367.firebaseapp.com",
-  projectId: "bubbleword-30367"
-});
+  projectId: "bubbleword-30367",
+  storageBucket: "bubbleword-30367.firebasestorage.app",
+  messagingSenderId: "1058393039019",
+  appId: "1:1058393039019:web:72ffaf6dab677b9a3657ee"
+};
 
-const db = firebase.firestore();
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// ===== HELPERS =====
+// ================================
+// HELPERS
+// ================================
 
 function generateID() {
     return Math.random().toString(36).substring(2, 10);
 }
 
 function parseCSV(text) {
-    return text.split("\n")
+    return text
+        .split("\n")
         .map(l => l.trim())
         .filter(l => l.includes(","))
         .map(line => {
@@ -100,81 +147,126 @@ function parseCSV(text) {
         });
 }
 
-// ===== PREVIEW =====
+function readCSVFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = reject;
+        reader.readAsText(file);
+    });
+}
 
-function previewVocab() {
+// ================================
+// PREVIEW
+// ================================
 
-    const text = document.getElementById("teacher-input").value;
-    const terms = parseCSV(text);
+window.previewVocab = async function () {
 
-    let html = "<table><tr><th>Word</th><th>Meaning</th></tr>";
+    const pasteText = document.getElementById("teacher-input").value;
+    const file = document.getElementById("csvFile").files[0];
+
+    let rawText = file ? await readCSVFile(file) : pasteText;
+
+    if (!rawText.trim()) {
+        alert("Paste or upload vocab first.");
+        return;
+    }
+
+    const terms = parseCSV(rawText);
+
+    let html = `
+        <h4>Preview (${terms.length} items)</h4>
+        <table>
+            <tr><th>Word</th><th>Meaning</th></tr>
+    `;
 
     terms.forEach(t => {
         html += `<tr><td>${t.word}</td><td>${t.meaning}</td></tr>`;
     });
 
-    html += "</table>";
+    html += `</table>`;
 
     document.getElementById("preview-box").innerHTML = html;
-}
+};
 
-// ===== SAVE =====
+// ================================
+// SAVE
+// ================================
 
-function createVocabSet() {
+window.createVocabSet = async function () {
 
     const title = document.getElementById("set-name").value.trim();
-    const text = document.getElementById("teacher-input").value;
+    const contentArea = document.getElementById("content-area").value.trim();
+    const pasteText = document.getElementById("teacher-input").value;
+    const file = document.getElementById("csvFile").files[0];
 
     if (!title) {
-        alert("Enter a title.");
+        alert("Enter a set title.");
         return;
     }
 
-    const terms = parseCSV(text);
+    let rawText = file ? await readCSVFile(file) : pasteText;
 
-    if (terms.length < 3) {
-        alert("Add more vocab.");
+    if (!rawText.trim()) {
+        alert("Paste or upload vocabulary.");
+        return;
+    }
+
+    const terms = parseCSV(rawText);
+
+    if (terms.length < 5) {
+        alert("Please include at least 5 vocab items.");
         return;
     }
 
     const id = generateID();
 
-    db.collection("vocabSets").doc(id).set({
-        title: title,
+    await setDoc(doc(db, "vocabSets", id), {
+        title,
+        contentArea,
         createdAt: Date.now(),
-        terms: terms
-    })
-    .then(() => {
-
-        const link = "https://alexjeffersonmarsh.github.io/BubbleWord/play.html?id=" + id;
-
-        document.getElementById("result").innerHTML = `
-            ✅ Saved!<br><br>
-            <input id="shareLink" value="${link}" readonly>
-            <button onclick="copyLink()">Copy</button>
-            <br><br>
-            <a href="${link}" target="_.toCanvas(document.getElementById("qrCanvas"), link);
-        } catch (e) {}
-
-    })
-    .catch(err => {
-        console.error(err);
-        alert("Save failed");
+        terms
     });
 
-}
+    // ✅ FIXED PATH FOR GITHUB PAGES
+    const basePath = "/BubbleWord";
 
-// ===== COPY =====
+    const selectedGame = document.getElementById("game-select").value;
+    const link = `https://alexjeffersonmarsh.github.io/BubbleWord/${selectedGame}?id=${id}`;
 
-function copyLink() {
+    document.getElementById("result").innerHTML = `
+g> ${selectedGame}<br><br>
+
+        <input id="shareLink" value="${link}" readonly>
+
+        <button onclick="copyLink()">Copy Link</button>
+
+        <br><br>
+
+        ${link}<strong>▶ Open Game</strong></a><br><br>
+
+        <strong>Scan QR Code:</strong>
+    `;
+
+    try {
+        QRCode.toCanvas(document.getElementById("qrCanvas"), link);
+    } catch (err) {
+        console.warn("QR failed:", err);
+    }
+};
+
+// ================================
+// COPY
+// ================================
+
+window.copyLink = function () {
     const input = document.getElementById("shareLink");
     input.select();
-    document.execCommand("copy");
-    alert("Copied!");
-}
+    navigator.clipboard.writeText(input.value);
+    alert("✅ Link copied!");
+};
 
 </script>
 
 </body>
 </html>
-``

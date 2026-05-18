@@ -1,16 +1,15 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
 <meta charset="UTF-8">
-<title>BubbleWord Teacher Setup</title>
+<title>Vocabulary Builder</title>
 
-<!-- ✅ CSS -->
-<link rel="stylesheet" href="styles.css">
+<!-- ✅ FIXED CSS -->
+<links.css
 
-<!-- ✅ QR CODE -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<!-- ✅ FIXED QR LIB -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode.min.js
 
 <style>
 body {
@@ -21,19 +20,11 @@ body {
 #teacher-panel {
     width: 650px;
     max-width: 95vw;
-    margin-top: 20px;
+    margin: 20px auto;
 }
 
 #teacher-input {
     height: 180px;
-}
-
-#teacher-panel h2 {
-    margin-bottom: 8px;
-}
-
-#teacher-panel p {
-    margin-bottom: 10px;
 }
 
 #preview-box table {
@@ -63,26 +54,21 @@ body {
 
 <p>Paste vocabulary in format: <b>word, meaning</b></p>
 
-<input id="set-name" placeholder="Set Title (e.g. Unit 1 Vocab)">
-<input id="content-area" placeholder="Content Area (Latin, Physics, etc.)">
+<input id="set-name" placeholder="Set Title">
+<input id="content-area" placeholder="Content Area">
 
-<h4>Paste CSV:</h4>
 <textarea id="teacher-input">
 amicus, friend
 aqua, water
 arbor, tree
-bellum, war
-caelum, sky
 </textarea>
 
-<h4>OR Upload CSV File:</h4>
 <input type="file" id="csvFile" accept=".csv">
 
-<button class="secondary" onclick="previewVocab()">Preview Vocab</button>
+<button onclick="previewVocab()">Preview</button>
 <button onclick="createVocabSet()">Save</button>
 
 <div id="preview-box"></div>
-
 <div id="result"></div>
 <canvas id="qrCanvas"></canvas>
 
@@ -91,19 +77,13 @@ caelum, sky
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-    getFirestore,
-    doc,
-    setDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, doc, setDoc } 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
   authDomain: "bubbleword-30367.firebaseapp.com",
-  projectId: "bubbleword-30367",
-  storageBucket: "bubbleword-30367.firebasestorage.app",
-  messagingSenderId: "1058393039019",
-  appId: "1:1058393039019:web:72ffaf6dab677b9a3657ee"
+  projectId: "bubbleword-30367"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -116,8 +96,7 @@ function generateID() {
 }
 
 function parseCSV(text) {
-    return text
-        .split("\n")
+    return text.split("\n")
         .map(l => l.trim())
         .filter(l => l.includes(","))
         .map(line => {
@@ -129,42 +108,20 @@ function parseCSV(text) {
         });
 }
 
-function readCSVFile(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsText(file);
-    });
-}
-
 // ===== PREVIEW =====
 
-window.previewVocab = async function () {
+window.previewVocab = function () {
 
-    const pasteText = document.getElementById("teacher-input").value;
-    const file = document.getElementById("csvFile").files[0];
+    const text = document.getElementById("teacher-input").value;
+    const terms = parseCSV(text);
 
-    let rawText = file ? await readCSVFile(file) : pasteText;
-
-    if (!rawText.trim()) {
-        alert("Paste or upload vocab first.");
-        return;
-    }
-
-    const terms = parseCSV(rawText);
-
-    let html = `
-        <h4>Preview (${terms.length} items)</h4>
-        <table>
-            <tr><th>Word</th><th>Meaning</th></tr>
-    `;
+    let html = "<table><tr><th>Word</th><th>Meaning</th></tr>";
 
     terms.forEach(t => {
         html += `<tr><td>${t.word}</td><td>${t.meaning}</td></tr>`;
     });
 
-    html += `</table>`;
+    html += "</table>";
 
     document.getElementById("preview-box").innerHTML = html;
 };
@@ -174,26 +131,17 @@ window.previewVocab = async function () {
 window.createVocabSet = async function () {
 
     const title = document.getElementById("set-name").value.trim();
-    const contentArea = document.getElementById("content-area").value.trim();
-    const pasteText = document.getElementById("teacher-input").value;
-    const file = document.getElementById("csvFile").files[0];
+    const text = document.getElementById("teacher-input").value;
 
     if (!title) {
-        alert("Enter a set title.");
+        alert("Enter a title.");
         return;
     }
 
-    let rawText = file ? await readCSVFile(file) : pasteText;
+    const terms = parseCSV(text);
 
-    if (!rawText.trim()) {
-        alert("Paste or upload vocabulary.");
-        return;
-    }
-
-    const terms = parseCSV(rawText);
-
-    if (terms.length < 5) {
-        alert("Please include at least 5 vocab items.");
+    if (terms.length < 3) {
+        alert("Add more vocab.");
         return;
     }
 
@@ -201,31 +149,23 @@ window.createVocabSet = async function () {
 
     await setDoc(doc(db, "vocabSets", id), {
         title,
-        contentArea,
         createdAt: Date.now(),
         terms
     });
 
-    // ✅ SINGLE CLEAN LINK (play page)
-    const link = `https://alexjeffersonmarsh.github.io/BubbleWord/play.html?id=${id}`;
+    const link = "https://alexjeffersonmarsh.github.io/BubbleWord/play.html?id=" + id;
 
     document.getElementById("result").innerHTML = `
         ✅ Saved!<br><br>
-
-        <input id="shareLink" value="${>Copy Link</button>
-
+        <input id="shareLink" value="${link}" readonly>
+        <button onclick="copyLink()">Copy</button>
         <br><br>
-
-        ${link}<strong>▶ Open Game</strong></a><br><br>
-
-        <strong>Scan QR Code:</strong>
+        <a href▶ Open</a>
     `;
 
     try {
         QRCode.toCanvas(document.getElementById("qrCanvas"), link);
-    } catch (err) {
-        console.warn("QR failed:", err);
-    }
+    } catch (e) {}
 };
 
 // ===== COPY =====
@@ -234,7 +174,7 @@ window.copyLink = function () {
     const input = document.getElementById("shareLink");
     input.select();
     navigator.clipboard.writeText(input.value);
-    alert("✅ Link copied!");
+    alert("Copied!");
 };
 
 </script>

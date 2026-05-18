@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,29 +9,25 @@
 <!-- ✅ CSS -->
 <link rel="stylesheet" href="styles.css">
 
-<!-- ✅ QR CODE LIB -->
+<!-- ✅ QR CODE -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
-<!-- ✅ LAYOUT FIXES -->
 <style>
 body {
     overflow: auto !important;
     justify-content: center !important;
 }
 
-/* ✅ WIDER PANEL */
 #teacher-panel {
     width: 650px;
     max-width: 95vw;
     margin-top: 20px;
 }
 
-/* ✅ SHORTER TEXT AREA */
 #teacher-input {
     height: 180px;
 }
 
-/* ✅ TIGHT SPACING */
 #teacher-panel h2 {
     margin-bottom: 8px;
 }
@@ -39,7 +36,6 @@ body {
     margin-bottom: 10px;
 }
 
-/* ✅ COMPACT PREVIEW */
 #preview-box table {
     font-size: 13px;
 }
@@ -49,7 +45,6 @@ body {
     padding: 5px;
 }
 
-/* ✅ RESULT BOX */
 #result {
     margin-top: 15px;
     background: #f0f9ff;
@@ -64,19 +59,12 @@ body {
 
 <div id="teacher-panel">
 
-<h2>BubbleWord Teacher CMS</h2>
+<h2>Vocabulary Builder</h2>
 
 <p>Paste vocabulary in format: <b>word, meaning</b></p>
 
 <input id="set-name" placeholder="Set Title (e.g. Unit 1 Vocab)">
 <input id="content-area" placeholder="Content Area (Latin, Physics, etc.)">
-
-<h4>Select Game:</h4>
-<select id="game-select">
-    <option value="index.html">BubbleWord</option>
-    <option value="gemword.html">GemWord</option>
-    <option value="flashcards.html">Flashcards</option>
-</select>
 
 <h4>Paste CSV:</h4>
 <textarea id="teacher-input">
@@ -100,10 +88,6 @@ caelum, sky
 
 </div>
 
-<!-- =========================================
-     FIREBASE CMS
-========================================= -->
-
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -125,9 +109,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ================================
-// HELPERS
-// ================================
+// ===== HELPERS =====
 
 function generateID() {
     return Math.random().toString(36).substring(2, 10);
@@ -156,9 +138,7 @@ function readCSVFile(file) {
     });
 }
 
-// ================================
-// PREVIEW
-// ================================
+// ===== PREVIEW =====
 
 window.previewVocab = async function () {
 
@@ -189,9 +169,7 @@ window.previewVocab = async function () {
     document.getElementById("preview-box").innerHTML = html;
 };
 
-// ================================
-// SAVE
-// ================================
+// ===== SAVE =====
 
 window.createVocabSet = async function () {
 
@@ -228,18 +206,13 @@ window.createVocabSet = async function () {
         terms
     });
 
-    // ✅ FIXED PATH FOR GITHUB PAGES
-    const basePath = "/BubbleWord";
-
-    const selectedGame = document.getElementById("game-select").value;
-    const link = `https://alexjeffersonmarsh.github.io/BubbleWord/${selectedGame}?id=${id}`;
+    // ✅ SINGLE CLEAN LINK (play page)
+    const link = `https://alexjeffersonmarsh.github.io/BubbleWord/play.html?id=${id}`;
 
     document.getElementById("result").innerHTML = `
-g> ${selectedGame}<br><br>
+        ✅ Saved!<br><br>
 
-        <input id="shareLink" value="${link}" readonly>
-
-        <button onclick="copyLink()">Copy Link</button>
+        <input id="shareLink" value="${>Copy Link</button>
 
         <br><br>
 
@@ -255,9 +228,7 @@ g> ${selectedGame}<br><br>
     }
 };
 
-// ================================
-// COPY
-// ================================
+// ===== COPY =====
 
 window.copyLink = function () {
     const input = document.getElementById("shareLink");

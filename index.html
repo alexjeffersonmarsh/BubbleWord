@@ -5,12 +5,10 @@
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>BubbleWord</title>
 
-<!-- CSS -->
 <link rel="stylesheet" href="styles.css">
 
 </head>
@@ -25,9 +23,7 @@
 
     <h2>BubbleWord</h2>
 
-    <p>
-        Load a vocabulary list from the online repository.
-    </p>
+    <p>Load a vocabulary list from the online repository.</p>
 
     <input
         type="text"
@@ -36,18 +32,12 @@
     >
 
     <p style="font-size:13px;color:#666;margin-top:10px;">
-
         Example:
-
         <br><br>
-
         https://alexjeffersonmarsh.github.io/bubble-vocab-lists/sat-unit-1.json
-
     </p>
 
-    <button id="start-game-btn">
-        Start Game
-    </button>
+    <button id="start-game-btn">Start Game</button>
 
 </div>
 
@@ -60,319 +50,162 @@
     <canvas id="gameCanvas"></canvas>
 
     <!-- LEFT HUD -->
-
     <div id="hud-left">
-
         <div class="hud-box">
-            Score:
-            <span id="score">0</span>
+            Score: <span id="score">0</span>
         </div>
-
         <div class="hud-box">
-            Level:
-            <span id="level">1</span>
+            Level: <span id="level">1</span>
         </div>
-
     </div>
 
     <!-- RIGHT HUD -->
-
     <div id="hud-right">
-
         <div class="hud-box">
-            Time:
-            <span id="timer">60</span>
+            Time: <span id="timer">60</span>
         </div>
-
         <div class="hud-box">
-            Shots Left:
-            <span id="attempts">20</span>
+            Shots Left: <span id="attempts">20</span>
         </div>
-
         <div class="hud-box">
             <button id="mute-btn">🔊</button>
         </div>
-
     </div>
 
     <!-- TARGET WORD -->
-
     <div id="target-word-bar">
-
-        <div id="target-label">
-            Find the definition for:
-        </div>
-
-        <div id="target-word">
-            PRESS START
-        </div>
-
+        <div id="target-label">Find the definition for:</div>
+        <div id="target-word">PRESS START</div>
     </div>
 
 </div>
 
 <!-- =========================================
-     VOCABULARY LOADER
+     VOCABULARY LOADER (JSON URL SUPPORT)
 ========================================= -->
 
 <script>
 
-// =========================================
-// GLOBAL PRELOADED VOCAB
-// =========================================
-
+// Global
 window.preloadedVocab = null;
 
-// =========================================
-// LOAD VOCABULARY FROM JSON URL
-// =========================================
-
+// Load via ?vocab=URL
 async function loadVocabularyFromURL() {
 
-    const params =
-        new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(window.location.search);
+    const vocabURL = params.get("vocab");
 
-    const vocabURL =
-        params.get("vocab");
-
-    // No vocab parameter
-
-    if (!vocabURL) {
-
-        return;
-
-    }
+    if (!vocabURL) return;
 
     try {
-
-        const response =
-            await fetch(vocabURL);
-
-        const data =
-            await response.json();
-
-        // Save globally
+        const response = await fetch(vocabURL);
+        const data = await response.json();
 
         window.preloadedVocab = data;
 
-        // Hide teacher panel
-
-        document.getElementById(
-            "teacher-panel"
-        ).style.display = "none";
-
-        console.log(
-            "Vocabulary loaded:",
-            data
-        );
-
-    }
-
-    catch(error) {
-
-        console.error(error);
-
-        alert(
-            "Could not load vocabulary list."
-        );
-
-    }
-
-}
-
-// =========================================
-// MANUAL URL LOADER
-// =========================================
-
-async function loadVocabularyManually() {
-
-    const url =
-        document
-        .getElementById("vocab-url")
-        .value
-        .trim();
-
-    if (!url) {
-
-        alert(
-            "Please enter a vocabulary URL."
-        );
-
-        return;
-
-    }
-
-    try {
-
-        const response =
-            await fetch(url);
-
-        const data =
-            await response.json();
-
-        window.preloadedVocab = data;
-
-        // Start game
+        document.getElementById("teacher-panel").style.display = "none";
 
         if (window.startLoadedGame) {
-
             window.startLoadedGame();
-
         }
 
-    }
-
-    catch(error) {
-
+    } catch (error) {
         console.error(error);
-
-        alert(
-            "Could not load vocabulary list."
-        );
-
+        alert("Could not load vocabulary list.");
     }
-
 }
 
-// =========================================
-// BUTTON EVENT
-// =========================================
+// Manual input loader
+async function loadVocabularyManually() {
+
+    const url = document.getElementById("vocab-url").value.trim();
+
+    if (!url) {
+        alert("Please enter a vocabulary URL.");
+        return;
+    }
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        window.preloadedVocab = data;
+
+        if (window.startLoadedGame) {
+            window.startLoadedGame();
+        }
+
+    } catch (error) {
+        console.error(error);
+        alert("Could not load vocabulary list.");
+    }
+}
 
 document
     .getElementById("start-game-btn")
-    .addEventListener(
-        "click",
-        loadVocabularyManually
-    );
+    .addEventListener("click", loadVocabularyManually);
 
-// =========================================
-// AUTO LOAD URL PARAMETER
-// =========================================
-
+// Auto-load JSON URL
 loadVocabularyFromURL();
 
 </script>
 
 <!-- =========================================
-     GAME SCRIPT
+     FIREBASE LOADER (UPDATED STRUCTURE)
 ========================================= -->
+
 <script type="module">
 
 import { initializeApp }
-
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 
 import {
-
     getFirestore,
-
-    collection,
-
-    getDocs
-
+    doc,
+    getDoc
 }
-
 from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// =========================================
-// FIREBASE CONFIG
-// =========================================
+// ✅ YOUR CONFIG
+const firebaseConfig = {
+  apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
+  authDomain: "bubbleword-30367.firebaseapp.com",
+  projectId: "bubbleword-30367",
+  storageBucket: "bubbleword-30367.firebasestorage.app",
+  messagingSenderId: "1058393039019",
+  appId: "1:1058393039019:web:72ffaf6dab677b9a3657ee"
+};
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
-    authDomain: "bubbleword-30367.firebaseapp.com",
-    projectId: "bubbleword-30367",
-    storageBucket: "bubbleword-30367.firebasestorage.app",
-    messagingSenderId: "1058393039019",
-    appId: "1:1058393039019:web:72ffaf6dab677b9a3657ee"
-  };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-// =========================================
-// INITIALIZE FIREBASE
-// =========================================
-
-const app =
-    initializeApp(firebaseConfig);
-
-const db =
-    getFirestore(app);
-
-// =========================================
-// LOAD VOCAB SET
-// =========================================
-
+// Load a set from Firebase
 async function loadSet(setId) {
 
-    const termsRef =
+    const ref = doc(db, "vocabSets", setId);
+    const snapshot = await getDoc(ref);
 
-        collection(
-            db,
-            "vocabSets",
-            setId,
-            "terms"
-        );
+    if (!snapshot.exists()) {
+        throw new Error("Set not found");
+    }
 
-    const snapshot =
-        await getDocs(termsRef);
+    const data = snapshot.data();
 
-    const vocab = [];
-
-    snapshot.forEach(doc => {
-
-        vocab.push(doc.data());
-
-    });
-
-    return vocab;
-
+    return data.terms; // ✅ NEW STRUCTURE
 }
 
-// =========================================
-// LOAD FROM URL
-// =========================================
+// Read URL parameters
+const params = new URLSearchParams(window.location.search);
 
-const params =
-
-    new URLSearchParams(
-        window.location.search
-    );
-
-const setId =
-    params.get("set");
-
-// Example:
-// index.html?set=sat-unit-1
+// ✅ Supports BOTH:
+// index.html?id=abc123 (NEW)
+// index.html?set=abc123 (OLD)
+const setId = params.get("id") || params.get("set");
 
 if (setId) {
 
     loadSet(setId)
-
         .then(vocab => {
 
             window.preloadedVocab = vocab;
 
-            if (window.startLoadedGame) {
-
-                window.startLoadedGame();
-
-            }
-
-        })
-
-        .catch(error => {
-
-            console.error(error);
-
-            alert(
-                "Could not load Firebase vocabulary set."
-            );
-
-        });
-
-}
-
-</script>
-<script src="script.js"></script>
-
-</body>
-</html>

@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 
+
 <head>
 <meta charset="UTF-8">
 <title>BubbleWord Teacher Setup</title>
 
-<link rel="stylesheet" href="styles.css">
+styles.css
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js
 
 </head>
+
 
 <body>
 
@@ -44,7 +46,7 @@ caelum, sky
 
 <button class="secondary" onclick="previewVocab()">Preview Vocab</button>
 
-<button onclick="createVocabSet()">Save Set</button>
+<button onclick="createVocabSet()">Save</button>
 
 <!-- ✅ PREVIEW -->
 <div id="preview-box"></div>
@@ -207,7 +209,13 @@ window.createVocabSet = async function () {
     `;
 
     // ✅ QR CODE
+    
+try {
     QRCode.toCanvas(document.getElementById("qrCanvas"), link);
+} catch (err) {
+    console.warn("QR failed to generate:", err);
+}
+
 };
 
 // =========================================

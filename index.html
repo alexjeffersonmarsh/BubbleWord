@@ -202,10 +202,21 @@ async function loadSet(setId) {
         throw new Error("Set not found");
     }
 
-    const data = snapshot.data();
+const data = snapshot.data();
 
-    return data.terms;
+// ✅ Handle Firestore REST format
+let terms = data.terms;
+
+// If using REST API string storage
+if (typeof terms === "string") {
+    try {
+        terms = JSON.parse(terms);
+    } catch (e) {
+        console.error("Parse failed:", e);
+        terms = [];
+    }
 }
+
 
 // ✅ Read URL param
 const params = new URLSearchParams(window.location.search);

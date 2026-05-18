@@ -24,6 +24,7 @@ body {
 ========================================= */
 #teacher-panel {
     width: 300px;
+    max-width: 400px; /* ✅ prevents oversizing */
     background: rgba(255,255,255,0.95);
     border-right: 4px solid #cde7f5;
     padding: 15px;
@@ -46,8 +47,22 @@ body {
     font-size: 14px;
 }
 
-/* Start button */
-#start-game-btn {
+/* =========================================
+   INPUTS
+========================================= */
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #b8d7e8;
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+/* =========================================
+   BUTTONS
+========================================= */
+button {
     margin-top: 12px;
     width: 100%;
     padding: 12px;
@@ -59,8 +74,75 @@ body {
     cursor: pointer;
 }
 
+button:hover {
+    transform: translateY(-2px);
+}
+
+/* ✅ Secondary button (Preview) */
+button.secondary {
+    background: linear-gradient(to bottom, #d0e8f7, #a8d4ef);
+    color: #1d3d57;
+}
+
+/* Start button */
 #start-game-btn:hover {
     background: linear-gradient(to bottom, #69e59d, #2cab63);
+}
+
+/* =========================================
+   PREVIEW TABLE
+========================================= */
+#preview-box {
+    margin-top: 15px;
+}
+
+#preview-box table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+#preview-box th {
+    background: #e8f4fb;
+    color: #1d3d57;
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #ccc;
+}
+
+#preview-box td {
+    padding: 8px;
+    border: 1px solid #ccc;
+    background: #ffffff;
+}
+
+#preview-box tr:nth-child(even) td {
+    background: #f7fbff;
+}
+
+/* =========================================
+   RESULT AREA (LINK + COPY)
+========================================= */
+#result {
+    margin-top: 15px;
+}
+
+#result input {
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+#result button {
+    margin-top: 8px;
+    background: linear-gradient(to bottom, #4aa3df, #2b7bbf);
+}
+
+/* =========================================
+   QR CODE
+========================================= */
+#qrCanvas {
+    margin-top: 15px;
+    display: block;
 }
 
 /* =========================================
@@ -114,21 +196,16 @@ canvas {
 }
 
 /* =========================================
-   HUD BOXES (LARGER + READABLE)
+   HUD BOXES
 ========================================= */
 .hud-box {
     background: rgba(255,255,255,0.95);
     padding: 16px 22px;
-
     border-radius: 14px;
-
     font-size: 20px;
     font-weight: bold;
-
     color: #1d3d57;
-
     box-shadow: 0 6px 12px rgba(0,0,0,0.1);
-
     min-width: 140px;
     text-align: center;
 }
@@ -141,12 +218,11 @@ canvas {
     background: none;
     border: none;
     cursor: pointer;
-
-    pointer-events: auto; /* ✅ clickable */
+    pointer-events: auto;
 }
 
 /* =========================================
-   TARGET WORD BAR (BOTTOM)
+   TARGET WORD BAR
 ========================================= */
 #target-word-bar {
     position: absolute;
@@ -158,7 +234,6 @@ canvas {
     border-top: 4px solid #cde7f5;
 
     padding: 16px 20px;
-
     text-align: center;
 
     box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
@@ -166,16 +241,14 @@ canvas {
     z-index: 5;
 }
 
-/* Label above word */
 #target-label {
     font-size: 16px;
     color: #5a6d7c;
     margin-bottom: 6px;
 }
 
-/* Main vocabulary word */
 #target-word {
-    font-size: 42px;   /* ✅ large for projector */
+    font-size: 42px;
     font-weight: bold;
     color: #123a52;
     letter-spacing: 2px;
@@ -183,7 +256,7 @@ canvas {
 }
 
 /* =========================================
-   SCROLLBAR STYLING
+   SCROLLBAR
 ========================================= */
 #teacher-panel::-webkit-scrollbar {
     width: 8px;
@@ -195,7 +268,7 @@ canvas {
 }
 
 /* =========================================
-   MOBILE SUPPORT
+   MOBILE
 ========================================= */
 @media (max-width: 900px) {
 

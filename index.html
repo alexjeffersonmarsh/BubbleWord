@@ -86,7 +86,7 @@
 </div>
 
 <!-- =========================================
-     JSON LOADER (OLD SUPPORT)
+     JSON LOADER (LEGACY SUPPORT)
 ========================================= -->
 
 <script>
@@ -98,33 +98,34 @@ async function loadVocabularyFromURL() {
 
     const params = new URLSearchParams(window.location.search);
 
-    // ✅ If Firebase ID exists → EXIT immediately
+    // ✅ VERY IMPORTANT: skip JSON loader if Firebase ID exists
     if (params.get("id")) {
         return;
     }
 
-    // ✅ Otherwise continue with JSON loader
     const vocabURL = params.get("vocab");
 
     if (!vocabURL) return;
 
-    fetch(vocabURL)
-        .then(res => res.json())
-        .then(data => {
+    try {
 
-            window.preloadedVocab = data;
+        const response = await fetch(vocabURL);
+        const data = await response.json();
 
-            document.getElementById("teacher-panel").style.display = "none";
+        window.preloadedVocab = data;
 
-            if (window.startLoadedGame) {
-                window.startLoadedGame();
-            }
+        document.getElementById("teacher-panel").style.display = "none";
 
-        })
-        .catch(err => {
-            console.error(err);
-            alert("Could not load vocabulary list.");
-        });
+        if (window.startLoadedGame) {
+            window.startLoadedGame();
+        }
+
+    } catch (err) {
+
+        console.error(err);
+        alert("Could not load vocabulary list.");
+
+    }
 }
 
 // Manual input
@@ -149,8 +150,10 @@ async function loadVocabularyManually() {
         }
 
     } catch (error) {
+
         console.error(error);
         alert("Could not load vocabulary list.");
+
     }
 }
 
@@ -158,7 +161,7 @@ document
     .getElementById("start-game-btn")
     .addEventListener("click", loadVocabularyManually);
 
-// Auto-load JSON
+// Auto-load JSON if present
 loadVocabularyFromURL();
 
 </script>
@@ -192,7 +195,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// ✅ Load vocab set from Firebase
+// ✅ FIXED loader
 async function loadSet(setId) {
 
     const ref = doc(db, "vocabSets", setId);
@@ -202,21 +205,22 @@ async function loadSet(setId) {
         throw new Error("Set not found");
     }
 
-const data = snapshot.data();
+    const data = snapshot.data();
 
-// ✅ Handle Firestore REST format
-let terms = data.terms;
+    let terms = data.terms;
 
-// If using REST API string storage
-if (typeof terms === "string") {
-    try {
-        terms = JSON.parse(terms);
-    } catch (e) {
-        console.error("Parse failed:", e);
-        terms = [];
+    // ✅ Handle string storage (from REST API)
+    if (typeof terms === "string") {
+        try {
+            terms = JSON.parse(terms);
+        } catch (e) {
+            console.error("Parse failed:", e);
+            terms = [];
+        }
     }
-}
 
+    return terms;
+}
 
 // ✅ Read URL param
 const params = new URLSearchParams(window.location.search);
@@ -227,7 +231,6 @@ if (setId) {
     loadSet(setId)
         .then(vocab => {
 
-            // Normalize (supports old + new)
             window.preloadedVocab = vocab.map(v => ({
                 word: v.word,
                 definition: v.meaning
@@ -261,4 +264,3 @@ if (setId) {
 
 </body>
 </html>
-``

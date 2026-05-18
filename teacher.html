@@ -3,7 +3,7 @@
 
 <head>
 <meta charset="UTF-8">
-<title>MarshVocab Teacher Setup</title>
+<title>BubbleWord Teacher Setup</title>
 
 <!-- ✅ CSS -->
 <link rel="stylesheet" href="styles.css">
@@ -177,19 +177,11 @@ window.previewVocab = async function () {
     let html = `
         <h4>Preview (${terms.length} items)</h4>
         <table>
-            <tr>
-                <th>Word</th>
-                <th>Meaning</th>
-            </tr>
+            <tr><th>Word</th><th>Meaning</th></tr>
     `;
 
     terms.forEach(t => {
-        html += `
-            <tr>
-                <td>${t.word}</td>
-                <td>${t.meaning}</td>
-            </tr>
-        `;
+        html += `<tr><td>${t.word}</td><td>${t.meaning}</td></tr>`;
     });
 
     html += `</table>`;
@@ -236,12 +228,16 @@ window.createVocabSet = async function () {
         terms
     });
 
+    // ✅ FIXED PATH FOR GITHUB PAGES
+    const basePath = "/BubbleWord";
+
     const selectedGame = document.getElementById("game-select").value;
-    const link = `${window.location.origin}/${selectedGame}?id=${id}`;
+    const link = `${window.location.origin}${basePath}/${selectedGame}?id=${id}`;
 
     document.getElementById("result").innerHTML = `
-        ✅ Saved!<br><br>
-          <input id="shareLink" value="${link}" readonly>
+g> ${selectedGame}<br><br>
+
+        <input id="shareLink" value="${link}" readonly>
 
         <button onclick="copyLink()">Copy Link</button>
 

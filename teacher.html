@@ -1,26 +1,23 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
+
 <meta charset="UTF-8">
 <title>Vocabulary Builder</title>
 
-<!-- ✅ FIXED CSS -->
-<links.css
-
-<!-- ✅ FIXED QR LIB -->
-<script src="https://cdn.jsdelivr.net/npm/qrcode.min.js
+<link rel="stylesheet" hrefps://cdn.jsdelivr.net/npm/qrcode/build/qrcodept>
 
 <style>
 body {
-    overflow: auto !important;
-    justify-content: center !important;
+    overflow: auto;
+    display: flex;
+    justify-content: center;
 }
 
 #teacher-panel {
     width: 650px;
-    max-width: 95vw;
-    margin: 20px auto;
+    margin-top: 20px;
 }
 
 #teacher-input {
@@ -29,10 +26,11 @@ body {
 
 #preview-box table {
     font-size: 13px;
+    border-collapse: collapse;
 }
 
-#preview-box td,
-#preview-box th {
+#preview-box td, th {
+    border: 1px solid #ccc;
     padding: 5px;
 }
 
@@ -52,18 +50,13 @@ body {
 
 <h2>Vocabulary Builder</h2>
 
-<p>Paste vocabulary in format: <b>word, meaning</b></p>
-
 <input id="set-name" placeholder="Set Title">
-<input id="content-area" placeholder="Content Area">
 
 <textarea id="teacher-input">
 amicus, friend
 aqua, water
 arbor, tree
 </textarea>
-
-<input type="file" id="csvFile" accept=".csv">
 
 <button onclick="previewVocab()">Preview</button>
 <button onclick="createVocabSet()">Save</button>
@@ -74,20 +67,20 @@ arbor, tree
 
 </div>
 
-<script type="module">
+<!-- ✅ ✅ FIREBASE NON-MODULE VERSION -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, doc, setDoc } 
-from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<script>
 
-const firebaseConfig = {
+// ✅ INIT FIREBASE (older version = simpler)
+firebase.initializeApp({
   apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
   authDomain: "bubbleword-30367.firebaseapp.com",
   projectId: "bubbleword-30367"
-};
+});
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const db = firebase.firestore();
 
 // ===== HELPERS =====
 
@@ -110,7 +103,7 @@ function parseCSV(text) {
 
 // ===== PREVIEW =====
 
-window.previewVocab = function () {
+function previewVocab() {
 
     const text = document.getElementById("teacher-input").value;
     const terms = parseCSV(text);
@@ -124,11 +117,11 @@ window.previewVocab = function () {
     html += "</table>";
 
     document.getElementById("preview-box").innerHTML = html;
-};
+}
 
 // ===== SAVE =====
 
-window.createVocabSet = async function () {
+function createVocabSet() {
 
     const title = document.getElementById("set-name").value.trim();
     const text = document.getElementById("teacher-input").value;
@@ -147,37 +140,42 @@ window.createVocabSet = async function () {
 
     const id = generateID();
 
-    await setDoc(doc(db, "vocabSets", id), {
-        title,
+    db.collection("vocabSets").doc(id).set({
+        title: title,
         createdAt: Date.now(),
-        terms
+        terms: terms
+    })
+    .then(() => {
+
+        const link = "https://alexjeffersonmarsh.github.io/BubbleWord/play.html?id=" + id;
+
+        document.getElementById("result").innerHTML = `
+            ✅ Saved!<br><br>
+            <input id="shareLink" value="${link}" readonly>
+            <button onclick="copyLink()">Copy</button>
+            <br><br>
+            <a href="${link}" target="_.toCanvas(document.getElementById("qrCanvas"), link);
+        } catch (e) {}
+
+    })
+    .catch(err => {
+        console.error(err);
+        alert("Save failed");
     });
 
-    const link = "https://alexjeffersonmarsh.github.io/BubbleWord/play.html?id=" + id;
-
-    document.getElementById("result").innerHTML = `
-        ✅ Saved!<br><br>
-        <input id="shareLink" value="${link}" readonly>
-        <button onclick="copyLink()">Copy</button>
-        <br><br>
-        <a href▶ Open</a>
-    `;
-
-    try {
-        QRCode.toCanvas(document.getElementById("qrCanvas"), link);
-    } catch (e) {}
-};
+}
 
 // ===== COPY =====
 
-window.copyLink = function () {
+function copyLink() {
     const input = document.getElementById("shareLink");
     input.select();
-    navigator.clipboard.writeText(input.value);
+    document.execCommand("copy");
     alert("Copied!");
-};
+}
 
 </script>
 
 </body>
 </html>
+``

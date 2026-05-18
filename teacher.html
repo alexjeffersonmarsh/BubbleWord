@@ -6,7 +6,10 @@
 <meta charset="UTF-8">
 <title>BubbleWord Teacher Setup</title>
 
+<!-- ✅ CSS -->
 <link rel="stylesheet" href="styles.css">
+
+<!-- ✅ QR Code -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
 <style>
@@ -57,6 +60,13 @@ body {
 <input id="set-name" placeholder="Set Title (e.g. Unit 1)">
 <input id="content-area" placeholder="Content Area (Latin, etc.)">
 
+<!-- ✅ GAME DROPDOWN -->
+<h4>Select Game:</h4>
+<select id="game-select">
+    <option value="BubbleWord">BubbleWord</option>
+    <option value="GemWord">GemWord</option>
+</select>
+
 <textarea id="teacher-input">
 amicus, friend
 aqua, water
@@ -81,6 +91,8 @@ caelum, sky
 
 <script>
 
+// ===== HELPERS =====
+
 function generateID() {
     return Math.random().toString(36).substring(2, 10);
 }
@@ -99,8 +111,8 @@ function parseCSV(text) {
 }
 
 // ===== PREVIEW =====
-function previewVocab() {
 
+function previewVocab() {
     const text = document.getElementById("teacher-input").value;
     const terms = parseCSV(text);
 
@@ -140,7 +152,8 @@ async function createVocabSet() {
 
     try {
 
-        const response = await fetch(
+        // ✅ SAVE TO FIRESTORE (REST API — your working method)
+        await fetch(
             "https://firestore.googleapis.com/v1/projects/bubbleword-30367/databases/(default)/documents/vocabSets?documentId=" + id,
             {
                 method: "POST",
@@ -160,14 +173,24 @@ async function createVocabSet() {
             }
         );
 
-        // ✅ ORIGINAL WORKING LINK
-        const link = "https://alexjeffersonmarsh.github.io/BubbleWord/index.html?id=" + id;
+        // ✅ GAME SELECTION
+        const selectedGame = document.getElementById("game-select").value;
 
+        let link = "";
+
+        if (selectedGame === "BubbleWord") {
+            link = "https://alexjeffersonmarsh.github.io/BubbleWord/index.html?id=" + id;
+        }
+
+        if (selectedGame === "GemWord") {
+            link = "https://alexjeffersonmarsh.github.io/Latin-Vocab-Game/game.html?id=" + id;
+        }
+
+        // ✅ SHOW RESULT
         document.getElementById("result").innerHTML = `
             ✅ Saved!<br><br>
             <input id="shareLink" value="${link}" readonly>
-            <     <br><br>
-            ${link}<strong>▶ Open Game</strong></a>
+            <button onclick="copyLink()">Copy Linkng>▶ Open Game</strong></a>
             <br><br>
             Scan QR Code:
         `;

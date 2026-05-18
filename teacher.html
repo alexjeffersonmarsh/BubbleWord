@@ -2,109 +2,108 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>BubbleWord Teacher Setup</title>
+<meta charset="UTF-8">
+<title>BubbleWord Teacher Setup</title>
 
-    <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css">
 
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 20px;
-            background: linear-gradient(to bottom, #9ad9ff, #e6f7ff);
-            font-family: Arial, Helvetica, sans-serif;
-        }
+<style>
+body {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px;
+    background: linear-gradient(to bottom, #9ad9ff, #e6f7ff);
+    font-family: Arial, Helvetica, sans-serif;
+}
 
-        #teacher-box {
-            width: 700px;
-            background: white;
-            padding: 25px;
-            border-radius: 16px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-        }
+#teacher-box {
+    width: 700px;
+    background: white;
+    padding: 25px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
 
-        h2 { margin-bottom: 10px; color: #1d3d57; }
+h2 { margin-bottom: 10px; color: #1d3d57; }
 
-        p {
-            color: #4d6477;
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
+p {
+    color: #4d6477;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
 
-        textarea, input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 10px;
-            border: 2px solid #b8d7e8;
-            font-size: 14px;
-            margin-bottom: 12px;
-        }
+textarea, input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 2px solid #b8d7e8;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
 
-        textarea {
-            height: 320px;
-            resize: none;
-            line-height: 1.6;
-        }
+textarea {
+    height: 260px;
+    resize: none;
+    line-height: 1.6;
+}
 
-        button {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(to bottom, #58d88f, #34bc6e);
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-        }
+button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(to bottom, #58d88f, #34bc6e);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
 
-        button:hover {
-            transform: translateY(-2px);
-        }
+button:hover {
+    transform: translateY(-2px);
+}
 
-        #saved-sets div {
-            margin-top: 10px;
-            padding: 12px;
-            background: #f1faff;
-            border-radius: 10px;
-        }
-    </style>
+#result {
+    margin-top: 15px;
+    font-weight: bold;
+    color: #1d3d57;
+}
+
+</style>
 </head>
 
 <body>
 
 <div id="teacher-box">
 
-    <h2>BubbleWord Teacher CMS</h2>
+<h2>BubbleWord Teacher CMS</h2>
 
-    <p>Paste vocabulary in format: <b>word, definition</b></p>
+<p>Paste vocabulary in format: <b>word, meaning</b></p>
 
-    <input id="set-name" placeholder="Enter set name (e.g. sat-unit-1)">
+<input id="set-name" placeholder="Set Title (e.g. Unit 1 Vocab)">
+<input id="content-area" placeholder="Content Area (Latin, Physics, etc.)">
 
-    <textarea id="teacher-input">
+<h4>Paste CSV:</h4>
+<textarea id="teacher-input">
 amicus, friend
 aqua, water
 arbor, tree
 bellum, war
 caelum, sky
-canis, dog
-caput, head
-corpus, body
-dies, day
-dominus, master/lord
-    </textarea>
+</textarea>
 
-    <button onclick="createVocabSet()">SAVE TO FIREBASE</button>
+<h4>OR Upload CSV File:</h4>
+<input type="file" id="csvFile" accept=".csv">
 
-    <h3 style="margin-top:25px;">Saved Sets (Local Cache)</h3>
-    <div id="saved-sets"></div>
+<button onclick="createVocabSet()">SAVE TO FIREBASE</button>
+
+<p id="result"></p>
 
 </div>
 
 <!-- =========================================
-     FIREBASE AUTO CMS
+     FIREBASE CMS (UPDATED)
 ========================================= -->
 
 <script type="module">
@@ -113,70 +112,107 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import {
     getFirestore,
     doc,
-    setDoc,
-    collection,
-    addDoc
+    setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* 🔴 YOUR FIREBASE CONFIG */
+/* ✅ YOUR CONFIG (already filled in) */
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_AUTH_DOMAIN",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_STORAGE_BUCKET",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
+  authDomain: "bubbleword-30367.firebaseapp.com",
+  projectId: "bubbleword-30367",
+  storageBucket: "bubbleword-30367.firebasestorage.app",
+  messagingSenderId: "1058393039019",
+  appId: "1:1058393039019:web:72ffaf6dab677b9a3657ee"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // =========================================
-// CREATE SET (AUTO FIREBASE STRUCTURE)
+// HELPERS
 // =========================================
 
-window.createVocabSet = async function () {
+function generateID() {
+    return Math.random().toString(36).substring(2, 10);
+}
 
-    const name = document.getElementById("set-name").value.trim();
-    const input = document.getElementById("teacher-input").value;
-
-    if (!name) {
-        alert("Enter a set name.");
-        return;
-    }
-
-    const setId = name.toLowerCase().replace(/\s+/g, "-");
-
-    const lines = input
+function parseCSV(text) {
+    const lines = text
         .split("\n")
         .map(l => l.trim())
         .filter(l => l.includes(","));
 
-    if (lines.length < 5) {
-        alert("Add at least 5 vocab entries.");
+    return lines.map(line => {
+        const parts = line.split(",");
+
+        return {
+            word: parts[0].trim(),
+            meaning: parts.slice(1).join(",").trim()
+        };
+    });
+}
+
+function readCSVFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = err => reject(err);
+        reader.readAsText(file);
+    });
+}
+
+// =========================================
+// MAIN SAVE FUNCTION
+// =========================================
+
+window.createVocabSet = async function () {
+
+    const title = document.getElementById("set-name").value.trim();
+    const contentArea = document.getElementById("content-area").value.trim();
+    const pasteText = document.getElementById("teacher-input").value;
+    const file = document.getElementById("csvFile").files[0];
+
+    if (!title) {
+        alert("Enter a set title.");
         return;
     }
 
-    // 1. Create parent set document
-    await setDoc(doc(db, "vocabSets", setId), {
-        title: name,
-        created: new Date().toISOString()
-    });
+    let rawText = "";
 
-    // 2. Add terms subcollection
-    const termsRef = collection(db, "vocabSets", setId, "terms");
-
-    for (let line of lines) {
-
-        const parts = line.split(",");
-
-        await addDoc(termsRef, {
-            word: parts[0].trim(),
-            definition: parts.slice(1).join(",").trim()
-        });
+    // ✅ Prefer file if uploaded
+    if (file) {
+        rawText = await readCSVFile(file);
+    } else {
+        rawText = pasteText;
     }
 
-    alert("✅ Saved to Firebase successfully!");
+    if (!rawText.trim()) {
+        alert("Paste or upload vocabulary.");
+        return;
+    }
+
+    const terms = parseCSV(rawText);
+
+    if (terms.length < 5) {
+        alert("Please include at least 5 vocab items.");
+        return;
+    }
+
+    const id = generateID();
+
+    // ✅ NEW STRUCTURE (matches your requirement)
+    await setDoc(doc(db, "vocabSets", id), {
+        title: title,
+        contentArea: contentArea,
+        createdAt: Date.now(),
+        terms: terms
+    });
+
+    const link = `${window.location.origin}/load.html?id=${id}`;
+
+    document.getElementById("result").innerHTML =
+        `✅ Saved! <br><br>
+         <a href="${link}" targetlink in any game.`;
 };
 
 </script>

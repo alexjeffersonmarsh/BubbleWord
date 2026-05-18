@@ -1,75 +1,320 @@
-<!DOCTYPE html>
-<html lang="en">
 
-
-<head>
 <meta charset="UTF-8">
-<title>BubbleWord Teacher Setup</title>
 
-styles.css
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js
+<title>BubbleWord</title>
+
+<!-- CSS -->
+<link rel="stylesheet" href="styles.css">
 
 </head>
+@@ -25,9 +23,7 @@
 
+<h2>BubbleWord</h2>
 
-<body>
+    <p>
+        Load a vocabulary list from the online repository.
+    </p>
+    <p>Load a vocabulary list from the online repository.</p>
 
-<div id="teacher-box">
+<input
+type="text"
+@@ -36,18 +32,12 @@ <h2>BubbleWord</h2>
+>
 
-<h2>BubbleWord Teacher CMS</h2>
+<p style="font-size:13px;color:#666;margin-top:10px;">
 
-<p>Paste vocabulary in format: <b>word, meaning</b></p>
+Example:
 
-<input id="set-name" placeholder="Set Title (e.g. Unit 1 Vocab)">
-<input id="content-area" placeholder="Content Area (Latin, Physics, etc.)">
+<br><br>
 
-<!-- ✅ GAME SELECTION -->
-<h4>Select Game:</h4>
-<select id="game-select">
-    <option value="index.html">BubbleWord</option>
-    <option value="gemword.html">GemWord</option>
-    <option value="flashcards.html">Flashcards</option>
-</select>
+https://alexjeffersonmarsh.github.io/bubble-vocab-lists/sat-unit-1.json
 
-<h4>Paste CSV:</h4>
-<textarea id="teacher-input">
-amicus, friend
-aqua, water
-arbor, tree
-bellum, war
-caelum, sky
-</textarea>
+</p>
 
-<h4>OR Upload CSV File:</h4>
-<input type="file" id="csvFile" accept=".csv">
+    <button id="start-game-btn">
+        Start Game
+    </button>
+    <button id="start-game-btn">Start Game</button>
 
-<button class="secondary" onclick="previewVocab()">Preview Vocab</button>
+</div>
 
-<button onclick="createVocabSet()">Save</button>
+@@ -60,319 +50,162 @@ <h2>BubbleWord</h2>
+<canvas id="gameCanvas"></canvas>
 
-<!-- ✅ PREVIEW -->
-<div id="preview-box"></div>
+<!-- LEFT HUD -->
 
-<!-- ✅ RESULT -->
-<div id="result"></div>
-<canvas id="qrCanvas"></canvas>
+<div id="hud-left">
+
+<div class="hud-box">
+            Score:
+            <span id="score">0</span>
+            Score: <span id="score">0</span>
+</div>
+
+<div class="hud-box">
+            Level:
+            <span id="level">1</span>
+            Level: <span id="level">1</span>
+</div>
+
+</div>
+
+<!-- RIGHT HUD -->
+
+<div id="hud-right">
+
+<div class="hud-box">
+            Time:
+            <span id="timer">60</span>
+            Time: <span id="timer">60</span>
+</div>
+
+<div class="hud-box">
+            Shots Left:
+            <span id="attempts">20</span>
+            Shots Left: <span id="attempts">20</span>
+</div>
+
+<div class="hud-box">
+<button id="mute-btn">🔊</button>
+</div>
+
+</div>
+
+<!-- TARGET WORD -->
+
+<div id="target-word-bar">
+
+        <div id="target-label">
+            Find the definition for:
+        </div>
+
+        <div id="target-word">
+            PRESS START
+        </div>
+
+        <div id="target-label">Find the definition for:</div>
+        <div id="target-word">PRESS START</div>
+</div>
 
 </div>
 
 <!-- =========================================
-     FIREBASE CMS
+     VOCABULARY LOADER
+     VOCABULARY LOADER (JSON URL SUPPORT)
+========================================= -->
+
+<script>
+
+// =========================================
+// GLOBAL PRELOADED VOCAB
+// =========================================
+
+// Global
+window.preloadedVocab = null;
+
+// =========================================
+// LOAD VOCABULARY FROM JSON URL
+// =========================================
+
+// Load via ?vocab=URL
+async function loadVocabularyFromURL() {
+
+    const params =
+        new URLSearchParams(window.location.search);
+
+    const vocabURL =
+        params.get("vocab");
+    const params = new URLSearchParams(window.location.search);
+    const vocabURL = params.get("vocab");
+
+    // No vocab parameter
+
+    if (!vocabURL) {
+
+        return;
+
+    }
+    if (!vocabURL) return;
+
+try {
+
+        const response =
+            await fetch(vocabURL);
+
+        const data =
+            await response.json();
+
+        // Save globally
+        const response = await fetch(vocabURL);
+        const data = await response.json();
+
+window.preloadedVocab = data;
+
+        // Hide teacher panel
+
+        document.getElementById(
+            "teacher-panel"
+        ).style.display = "none";
+
+        console.log(
+            "Vocabulary loaded:",
+            data
+        );
+
+    }
+        document.getElementById("teacher-panel").style.display = "none";
+
+    catch(error) {
+        if (window.startLoadedGame) {
+            window.startLoadedGame();
+        }
+
+    } catch (error) {
+console.error(error);
+
+        alert(
+            "Could not load vocabulary list."
+        );
+
+        alert("Could not load vocabulary list.");
+}
+
+}
+
+// =========================================
+// MANUAL URL LOADER
+// =========================================
+
+// Manual input loader
+async function loadVocabularyManually() {
+
+    const url =
+        document
+        .getElementById("vocab-url")
+        .value
+        .trim();
+    const url = document.getElementById("vocab-url").value.trim();
+
+if (!url) {
+
+        alert(
+            "Please enter a vocabulary URL."
+        );
+
+        alert("Please enter a vocabulary URL.");
+return;
+
+}
+
+try {
+
+        const response =
+            await fetch(url);
+
+        const data =
+            await response.json();
+        const response = await fetch(url);
+        const data = await response.json();
+
+window.preloadedVocab = data;
+
+        // Start game
+
+if (window.startLoadedGame) {
+
+window.startLoadedGame();
+
+}
+
+    }
+
+    catch(error) {
+
+    } catch (error) {
+console.error(error);
+
+        alert(
+            "Could not load vocabulary list."
+        );
+
+        alert("Could not load vocabulary list.");
+}
+
+}
+
+// =========================================
+// BUTTON EVENT
+// =========================================
+
+document
+.getElementById("start-game-btn")
+    .addEventListener(
+        "click",
+        loadVocabularyManually
+    );
+
+// =========================================
+// AUTO LOAD URL PARAMETER
+// =========================================
+    .addEventListener("click", loadVocabularyManually);
+
+// Auto-load JSON URL
+loadVocabularyFromURL();
+
+</script>
+
+<!-- =========================================
+     GAME SCRIPT
+     FIREBASE LOADER (UPDATED STRUCTURE)
 ========================================= -->
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-    getFirestore,
-    doc,
-    setDoc
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp }
 
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+
+getFirestore,
+
+    collection,
+
+    getDocs
+
+    doc,
+    getDoc
+}
+
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// =========================================
+// FIREBASE CONFIG
+// =========================================
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
+    authDomain: "bubbleword-30367.firebaseapp.com",
+    projectId: "bubbleword-30367",
+    storageBucket: "bubbleword-30367.firebasestorage.app",
+    messagingSenderId: "1058393039019",
+    appId: "1:1058393039019:web:72ffaf6dab677b9a3657ee"
+  };
+
+// =========================================
+// INITIALIZE FIREBASE
+// =========================================
+
+const app =
+    initializeApp(firebaseConfig);
+
+const db =
+    getFirestore(app);
 // ✅ YOUR CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
@@ -80,156 +325,98 @@ const firebaseConfig = {
   appId: "1:1058393039019:web:72ffaf6dab677b9a3657ee"
 };
 
+// =========================================
+// LOAD VOCAB SET
+// =========================================
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// =========================================
-// HELPERS
-// =========================================
+// Load a set from Firebase
+async function loadSet(setId) {
 
-function generateID() {
-    return Math.random().toString(36).substring(2, 10);
-}
+    const termsRef =
+    const ref = doc(db, "vocabSets", setId);
+    const snapshot = await getDoc(ref);
 
-function parseCSV(text) {
-    const lines = text
-        .split("\n")
-        .map(l => l.trim())
-        .filter(l => l.includes(","));
+        collection(
+            db,
+            "vocabSets",
+            setId,
+            "terms"
+        );
 
-    return lines.map(line => {
-        const parts = line.split(",");
-        return {
-            word: parts[0].trim(),
-            meaning: parts.slice(1).join(",").trim()
-        };
+    const snapshot =
+        await getDocs(termsRef);
+
+    const vocab = [];
+
+    snapshot.forEach(doc => {
+
+        vocab.push(doc.data());
+
     });
-}
-
-function readCSVFile(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = err => reject(err);
-        reader.readAsText(file);
-    });
-}
-
-// =========================================
-// PREVIEW
-// =========================================
-
-window.previewVocab = async function () {
-
-    const pasteText = document.getElementById("teacher-input").value;
-    const file = document.getElementById("csvFile").files[0];
-
-    let rawText = file ? await readCSVFile(file) : pasteText;
-
-    if (!rawText.trim()) {
-        alert("Paste or upload vocab first.");
-        return;
+    if (!snapshot.exists()) {
+        throw new Error("Set not found");
     }
 
-    const terms = parseCSV(rawText);
+    return vocab;
+    const data = snapshot.data();
 
-    let html = `
-        <h4>Preview (${terms.length} items)</h4>
-        <table>
-            <tr>
-                <th>Word</th>
-                <th>Meaning</th>
-            </tr>
-    `;
-
-    terms.forEach(t => {
-        html += `
-            <tr>
-                <td>${t.word}</td>
-                <td>${t.meaning}</td>
-            </tr>
-        `;
-    });
-
-    html += `</table>`;
-
-    document.getElementById("preview-box").innerHTML = html;
-};
-
-// =========================================
-// SAVE
-// =========================================
-
-window.createVocabSet = async function () {
-
-    const title = document.getElementById("set-name").value.trim();
-    const contentArea = document.getElementById("content-area").value.trim();
-    const pasteText = document.getElementById("teacher-input").value;
-    const file = document.getElementById("csvFile").files[0];
-
-    if (!title) {
-        alert("Enter a set title.");
-        return;
-    }
-
-    let rawText = file ? await readCSVFile(file) : pasteText;
-
-    if (!rawText.trim()) {
-        alert("Paste or upload vocabulary.");
-        return;
-    }
-
-    const terms = parseCSV(rawText);
-
-    if (terms.length < 5) {
-        alert("Please include at least 5 vocab items.");
-        return;
-    }
-
-    const id = generateID();
-
-    await setDoc(doc(db, "vocabSets", id), {
-        title,
-        contentArea,
-        createdAt: Date.now(),
-        terms
-    });
-
-    // ✅ GAME SELECTION LINK
-    const selectedGame = document.getElementById("game-select").value;
-    const link = `${window.location.origin}/${selectedGame}?id=${id}`;
-
-    document.getElementById("result").innerHTML = `
-        ✅ Saved!<br><br>
-        <strong>Game:</strong> ${selectedGame}<br><br>
-        <input id="shareLink" value="${link}" readonly>
-        <button onclick="copyLink()">Copy Link</button>
-        <br><br>
-        <strong>Scan QR Code:</strong>
-    `;
-
-    // ✅ QR CODE
-    
-try {
-    QRCode.toCanvas(document.getElementById("qrCanvas"), link);
-} catch (err) {
-    console.warn("QR failed to generate:", err);
+    return data.terms; // ✅ NEW STRUCTURE
 }
 
-};
-
 // =========================================
-// COPY LINK
+// LOAD FROM URL
 // =========================================
+// Read URL parameters
+const params = new URLSearchParams(window.location.search);
 
-window.copyLink = function () {
-    const input = document.getElementById("shareLink");
-    input.select();
-    navigator.clipboard.writeText(input.value);
-    alert("✅ Link copied!");
-};
+const params =
+
+    new URLSearchParams(
+        window.location.search
+    );
+
+const setId =
+    params.get("set");
+
+// Example:
+// index.html?set=sat-unit-1
+// ✅ Supports BOTH:
+// index.html?id=abc123 (NEW)
+// index.html?set=abc123 (OLD)
+const setId = params.get("id") || params.get("set");
+
+if (setId) {
+
+loadSet(setId)
+
+.then(vocab => {
+
+window.preloadedVocab = vocab;
+
+            if (window.startLoadedGame) {
+
+                window.startLoadedGame();
+
+            }
+
+        })
+
+        .catch(error => {
+
+            console.error(error);
+
+            alert(
+                "Could not load Firebase vocabulary set."
+            );
+
+        });
+
+}
 
 </script>
+<script src="script.js"></script>
 
 </body>
 </html>

@@ -3,24 +3,58 @@
 
 <head>
 <meta charset="UTF-8">
-<title>BubbleWord Teacher Setup</title>
+<title>MarshVocab Teacher Setup</title>
 
-<!-- ✅ FIXED CSS -->
+<!-- ✅ CSS -->
 <link rel="stylesheet" href="styles.css">
 
 <!-- ✅ QR CODE LIB -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
-<!-- ✅ PAGE-SPECIFIC FIXES -->
+<!-- ✅ LAYOUT FIXES -->
 <style>
 body {
     overflow: auto !important;
     justify-content: center !important;
 }
 
-/* center the panel for teacher page */
+/* ✅ WIDER PANEL */
 #teacher-panel {
-    margin-top: 30px;
+    width: 650px;
+    max-width: 95vw;
+    margin-top: 20px;
+}
+
+/* ✅ SHORTER TEXT AREA */
+#teacher-input {
+    height: 180px;
+}
+
+/* ✅ TIGHT SPACING */
+#teacher-panel h2 {
+    margin-bottom: 8px;
+}
+
+#teacher-panel p {
+    margin-bottom: 10px;
+}
+
+/* ✅ COMPACT PREVIEW */
+#preview-box table {
+    font-size: 13px;
+}
+
+#preview-box td,
+#preview-box th {
+    padding: 5px;
+}
+
+/* ✅ RESULT BOX */
+#result {
+    margin-top: 15px;
+    background: #f0f9ff;
+    padding: 10px;
+    border-radius: 10px;
 }
 </style>
 
@@ -28,7 +62,6 @@ body {
 
 <body>
 
-<!-- ✅ USE SAME ID AS CSS -->
 <div id="teacher-panel">
 
 <h2>BubbleWord Teacher CMS</h2>
@@ -92,9 +125,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// =========================================
+// ================================
 // HELPERS
-// =========================================
+// ================================
 
 function generateID() {
     return Math.random().toString(36).substring(2, 10);
@@ -123,9 +156,9 @@ function readCSVFile(file) {
     });
 }
 
-// =========================================
+// ================================
 // PREVIEW
-// =========================================
+// ================================
 
 window.previewVocab = async function () {
 
@@ -146,3 +179,98 @@ window.previewVocab = async function () {
         <table>
             <tr>
                 <th>Word</th>
+                <th>Meaning</th>
+            </tr>
+    `;
+
+    terms.forEach(t => {
+        html += `
+            <tr>
+                <td>${t.word}</td>
+                <td>${t.meaning}</td>
+            </tr>
+        `;
+    });
+
+    html += `</table>`;
+
+    document.getElementById("preview-box").innerHTML = html;
+};
+
+// ================================
+// SAVE
+// ================================
+
+window.createVocabSet = async function () {
+
+    const title = document.getElementById("set-name").value.trim();
+    const contentArea = document.getElementById("content-area").value.trim();
+    const pasteText = document.getElementById("teacher-input").value;
+    const file = document.getElementById("csvFile").files[0];
+
+    if (!title) {
+        alert("Enter a set title.");
+        return;
+    }
+
+    let rawText = file ? await readCSVFile(file) : pasteText;
+
+    if (!rawText.trim()) {
+        alert("Paste or upload vocabulary.");
+        return;
+    }
+
+    const terms = parseCSV(rawText);
+
+    if (terms.length < 5) {
+        alert("Please include at least 5 vocab items.");
+        return;
+    }
+
+    const id = generateID();
+
+    await setDoc(doc(db, "vocabSets", id), {
+        title,
+        contentArea,
+        createdAt: Date.now(),
+        terms
+    });
+
+    const selectedGame = document.getElementById("game-select").value;
+    const link = `${window.location.origin}/${selectedGame}?id=${id}`;
+
+    document.getElementById("result").innerHTML = `
+        ✅ Saved!<br><br>
+          <input id="shareLink" value="${link}" readonly>
+
+        <button onclick="copyLink()">Copy Link</button>
+
+        <br><br>
+
+        ${link}<strong>▶ Open Game</strong></a><br><br>
+
+        <strong>Scan QR Code:</strong>
+    `;
+
+    try {
+        QRCode.toCanvas(document.getElementById("qrCanvas"), link);
+    } catch (err) {
+        console.warn("QR failed:", err);
+    }
+};
+
+// ================================
+// COPY
+// ================================
+
+window.copyLink = function () {
+    const input = document.getElementById("shareLink");
+    input.select();
+    navigator.clipboard.writeText(input.value);
+    alert("✅ Link copied!");
+};
+
+</script>
+
+</body>
+</html>

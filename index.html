@@ -97,27 +97,34 @@ window.preloadedVocab = null;
 async function loadVocabularyFromURL() {
 
     const params = new URLSearchParams(window.location.search);
+
+    // ✅ If Firebase ID exists → EXIT immediately
+    if (params.get("id")) {
+        return;
+    }
+
+    // ✅ Otherwise continue with JSON loader
     const vocabURL = params.get("vocab");
 
     if (!vocabURL) return;
 
-    try {
+    fetch(vocabURL)
+        .then(res => res.json())
+        .then(data => {
 
-        const response = await fetch(vocabURL);
-        const data = await response.json();
+            window.preloadedVocab = data;
 
-        window.preloadedVocab = data;
+            document.getElementById("teacher-panel").style.display = "none";
 
-        document.getElementById("teacher-panel").style.display = "none";
+            if (window.startLoadedGame) {
+                window.startLoadedGame();
+            }
 
-        if (window.startLoadedGame) {
-            window.startLoadedGame();
-        }
-
-    } catch (error) {
-        console.error(error);
-        alert("Could not load vocabulary list.");
-    }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Could not load vocabulary list.");
+        });
 }
 
 // Manual input

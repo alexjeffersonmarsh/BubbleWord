@@ -5,72 +5,12 @@
 <meta charset="UTF-8">
 <title>BubbleWord Teacher Setup</title>
 
+<!-- ✅ FIXED CSS -->
 <link rel="stylesheet" href="styles.css">
 
-<style>
-body {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 20px;
-    background: linear-gradient(to bottom, #9ad9ff, #e6f7ff);
-    font-family: Arial, Helvetica, sans-serif;
-}
+<!-- ✅ FIXED QR LIBRARY -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
-#teacher-box {
-    width: 700px;
-    background: white;
-    padding: 25px;
-    border-radius: 16px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-}
-
-h2 { margin-bottom: 10px; color: #1d3d57; }
-
-p {
-    color: #4d6477;
-    margin-bottom: 15px;
-    line-height: 1.5;
-}
-
-textarea, input {
-    width: 100%;
-    padding: 12px;
-    border-radius: 10px;
-    border: 2px solid #b8d7e8;
-    font-size: 14px;
-    margin-bottom: 12px;
-}
-
-textarea {
-    height: 260px;
-    resize: none;
-    line-height: 1.6;
-}
-
-button {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 10px;
-    background: linear-gradient(to bottom, #58d88f, #34bc6e);
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 10px;
-}
-
-button:hover {
-    transform: translateY(-2px);
-}
-
-#result {
-    margin-top: 15px;
-    font-weight: bold;
-    color: #1d3d57;
-}
-
-</style>
 </head>
 
 <body>
@@ -84,6 +24,14 @@ button:hover {
 <input id="set-name" placeholder="Set Title (e.g. Unit 1 Vocab)">
 <input id="content-area" placeholder="Content Area (Latin, Physics, etc.)">
 
+<!-- ✅ GAME SELECT -->
+<h4>Select Game:</h4>
+<select id="game-select">
+    <option value="index.html">BubbleWord</option>
+    <option value="gemword.html">GemWord</option>
+    <option value="flashcards.html">Flashcards</option>
+</select>
+
 <h4>Paste CSV:</h4>
 <textarea id="teacher-input">
 amicus, friend
@@ -96,14 +44,22 @@ caelum, sky
 <h4>OR Upload CSV File:</h4>
 <input type="file" id="csvFile" accept=".csv">
 
-<button onclick="createVocabSet()">SAVE</button>
+<button class="secondary" onclick="previewVocab()">Preview Vocab</button>
 
-<p id="result"></p>
+<!-- ✅ BUTTON UPDATED -->
+<button onclick="createVocabSet()">Save</button>
+
+<!-- ✅ PREVIEW -->
+<div id="preview-box"></div>
+
+<!-- ✅ RESULT -->
+<div id="result"></div>
+<canvas id="qrCanvas"></canvas>
 
 </div>
 
 <!-- =========================================
-     FIREBASE CMS (UPDATED)
+     FIREBASE CMS
 ========================================= -->
 
 <script type="module">
@@ -115,7 +71,7 @@ import {
     setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* ✅ YOUR CONFIG (already filled in) */
+// ✅ YOUR CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyD-goTprU8NMVqmsAlve6BAfXrPZN-sQdQ",
   authDomain: "bubbleword-30367.firebaseapp.com",
@@ -144,7 +100,6 @@ function parseCSV(text) {
 
     return lines.map(line => {
         const parts = line.split(",");
-
         return {
             word: parts[0].trim(),
             meaning: parts.slice(1).join(",").trim()
@@ -162,7 +117,48 @@ function readCSVFile(file) {
 }
 
 // =========================================
-// MAIN SAVE FUNCTION
+// PREVIEW
+// =========================================
+
+window.previewVocab = async function () {
+
+    const pasteText = document.getElementById("teacher-input").value;
+    const file = document.getElementById("csvFile").files[0];
+
+    let rawText = file ? await readCSVFile(file) : pasteText;
+
+    if (!rawText.trim()) {
+        alert("Paste or upload vocab first.");
+        return;
+    }
+
+    const terms = parseCSV(rawText);
+
+    let html = `
+        <h4>Preview (${terms.length} items)</h4>
+        <table>
+            <tr>
+                <th>Word</th>
+                <th>Meaning</th>
+            </tr>
+    `;
+
+    terms.forEach(t => {
+        html += `
+            <tr>
+                <td>${t.word}</td>
+                <td>${t.meaning}</td>
+            </tr>
+        `;
+    });
+
+    html += `</table>`;
+
+    document.getElementById("preview-box").innerHTML = html;
+};
+
+// =========================================
+// SAVE
 // =========================================
 
 window.createVocabSet = async function () {
@@ -177,14 +173,7 @@ window.createVocabSet = async function () {
         return;
     }
 
-    let rawText = "";
-
-    // ✅ Prefer file if uploaded
-    if (file) {
-        rawText = await readCSVFile(file);
-    } else {
-        rawText = pasteText;
-    }
+    let rawText = file ? await readCSVFile(file) : pasteText;
 
     if (!rawText.trim()) {
         alert("Paste or upload vocabulary.");
@@ -200,22 +189,26 @@ window.createVocabSet = async function () {
 
     const id = generateID();
 
-    // ✅ NEW STRUCTURE (matches your requirement)
     await setDoc(doc(db, "vocabSets", id), {
-        title: title,
-        contentArea: contentArea,
+        title,
+        contentArea,
         createdAt: Date.now(),
-        terms: terms
+        terms
     });
 
-    const link = `${window.location.origin}/load.html?id=${id}`;
+    // ✅ GAME LINK
+    const selectedGame = document.getElementById("game-select").value;
+    const link = `${window.location.origin}/${selectedGame}?id=${id}`;
 
-    document.getElementById("result").innerHTML =
-        `✅ Saved! <br><br>
-         <a href="${link}" targetlink in any game.`;
-};
+    // ✅ ALWAYS SHOW RESULT (even if QR fails)
+    document.getElementById("result").innerHTML = `
+        ✅ Saved!<br><br>
 
-</script>
+        <strong>Game:</strong> ${selectedGame}<br><br>
 
-</body>
-</html>
+        <input id="shareLink" value="${link}" readonly>
+
+        <button onclick="copyLink()">Copy Link</button>
+
+        <br><br>
+        <strong>Scan QR Code:</strong>
